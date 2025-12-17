@@ -14,16 +14,15 @@ import '../../../domain/usecases/pets/get_pet_details.dart';
 import '../../../domain/usecases/pets/get_pets.dart';
 import '../../../domain/usecases/pets/search_pets.dart';
 import '../../../domain/usecases/pets/update_pet.dart';
+import '../../../domain/usecases/pets/mark_adopted.dart';
 
 import 'pet_detail_controller.dart';
 import 'pet_list_controller.dart';
-
-/// NOTE: This assumes Dev1 created:
-/// final firebaseFirestoreServiceProvider = Provider<FirebaseFirestoreService>((ref) => ...);
+import 'mark_adopted_controller.dart';
 
 final petRemoteDataSourceProvider = Provider<PetRemoteDataSource>((ref) {
-  final firestoreService = ref.watch(firebaseFirestoreServiceProvider);
-  return PetRemoteDataSourceImpl(firestoreService);
+  final fs = ref.watch(firebaseFirestoreServiceProvider);
+  return PetRemoteDataSourceImpl(fs);
 });
 
 final petLocalDataSourceProvider = Provider<PetLocalDataSource>((ref) {
@@ -31,72 +30,70 @@ final petLocalDataSourceProvider = Provider<PetLocalDataSource>((ref) {
 });
 
 final petRepositoryProvider = Provider<PetRepository>((ref) {
-  final remote = ref.watch(petRemoteDataSourceProvider);
-  final local = ref.watch(petLocalDataSourceProvider);
   return PetRepositoryImpl(
-    remoteDataSource: remote,
-    localDataSource: local,
+    remoteDataSource: ref.watch(petRemoteDataSourceProvider),
+    localDataSource: ref.watch(petLocalDataSourceProvider),
   );
 });
 
-/// Usecases
+final getPetsUseCaseProvider =
+    Provider((ref) => GetPets(ref.watch(petRepositoryProvider)));
 
-final getPetsUseCaseProvider = Provider<GetPets>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return GetPets(repo);
+final getPetDetailsUseCaseProvider =
+    Provider((ref) => GetPetDetails(ref.watch(petRepositoryProvider)));
+
+final searchPetsUseCaseProvider =
+    Provider((ref) => SearchPets(ref.watch(petRepositoryProvider)));
+
+final filterPetsUseCaseProvider =
+    Provider((ref) => FilterPets(ref.watch(petRepositoryProvider)));
+
+final addPetUseCaseProvider =
+    Provider((ref) => AddPet(ref.watch(petRepositoryProvider)));
+
+final updatePetUseCaseProvider =
+    Provider((ref) => UpdatePet(ref.watch(petRepositoryProvider)));
+
+final deletePetUseCaseProvider =
+    Provider((ref) => DeletePet(ref.watch(petRepositoryProvider)));
+
+final markAdoptedUseCaseProvider =
+    Provider((ref) => MarkAdopted(ref.watch(petRepositoryProvider)));
+
+class PetsStreamFilter {
+  final String? type;
+  final String? location;
+  final bool onlyAvailable;
+
+  const PetsStreamFilter({
+    this.type,
+    this.location,
+    this.onlyAvailable = true,
+  });
+}
+
+final petsStreamProvider =
+    StreamProvider.autoDispose.family<List<Pet>, PetsStreamFilter>((ref, f) {
+  return ref.watch(petRepositoryProvider).watchPets(
+        type: f.type,
+        location: f.location,
+        onlyAvailable: f.onlyAvailable,
+      );
 });
 
-final getPetDetailsUseCaseProvider = Provider<GetPetDetails>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return GetPetDetails(repo);
-});
-
-final searchPetsUseCaseProvider = Provider<SearchPets>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return SearchPets(repo);
-});
-
-final filterPetsUseCaseProvider = Provider<FilterPets>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return FilterPets(repo);
-});
-
-final addPetUseCaseProvider = Provider<AddPet>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return AddPet(repo);
-});
-
-final updatePetUseCaseProvider = Provider<UpdatePet>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return UpdatePet(repo);
-});
-
-final deletePetUseCaseProvider = Provider<DeletePet>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return DeletePet(repo);
-});
-
-/// ✅ Stream pets (Week 2 Day 1–2)
-
-final petsStreamProvider = StreamProvider.autoDispose<List<Pet>>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return repo.watchPets(onlyAvailable: true);
-});
-
-/// Existing controller (Week 1) — keep if you still want it
-
-final petListControllerProvider = StateNotifierProvider<PetListController,
-    AsyncValue<List<PetSummaryUiModel>>>((ref) {
-  final getPets = ref.watch(getPetsUseCaseProvider);
-  return PetListController(getPets: getPets)..loadInitial();
-});
-
-/// ✅ Pet details controller (Week 2 Day 3–4)
-
-final petDetailControllerProvider = StateNotifierProvider.autoDispose
-    .family<PetDetailController, AsyncValue<Pet>, String>((ref, petId) {
-  final usecase = ref.watch(getPetDetailsUseCaseProvider);
-  final c = PetDetailController(getPetDetails: usecase);
-  c.load(petId);
+final petDetailControllerProvider =
+    StateNotifierProvider.autoDispose.family<PetDetailController, AsyncValue<Pet>, String>(
+        (ref, id) {
+  final c =
+      PetDetailController(getPetDetails: ref.watch(getPetDetailsUseCaseProvider));
+  c.load(id);
   return c;
+});
+
+final markAdoptedControllerProvider =
+    StateNotifierProvider.autoDispose<MarkAdoptedController, AsyncValue<void>>(
+        (ref) {
+  return MarkAdoptedController(
+    markAdopted: ref.watch(markAdoptedUseCaseProvider),
+  );
 });
