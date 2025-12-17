@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/widgets/loading_indicator.dart';
-import '../../../../core/widgets/error_view.dart';
-import '../../../../core/constants/app_strings.dart';
-import '../../../../core/constants/app_sizes.dart';
-
-import '../../providers/pets/pet_providers.dart';
+import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/loading_indicator.dart';
 import '../../providers/pets/pet_list_controller.dart';
+import '../../providers/pets/pet_providers.dart';
 import '../../widgets/pets/pet_card.dart';
 
 class PetListPage extends ConsumerWidget {
@@ -15,58 +14,48 @@ class PetListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final petListState = ref.watch(petListControllerProvider);
+    final petsAsync = ref.watch(petsStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppStrings.petsTitle), // e.g. "Available Pets"
+        title: Text(AppStrings.petsTitle),
       ),
       body: Column(
         children: [
           const _PetFilterBar(),
           Expanded(
-            child: petListState.when(
-              loading: () => const Center(
-                child: LoadingIndicator(),
-              ),
-              error: (err, stack) => Center(
+            child: petsAsync.when(
+              loading: () => const Center(child: LoadingIndicator()),
+              error: (e, _) => Center(
                 child: ErrorView(
-                  message: err.toString(),
-                  onRetry: () =>
-                      ref.read(petListControllerProvider.notifier).refresh(),
+                  message: e.toString(),
+                  onRetry: () => ref.refresh(petsStreamProvider),
                 ),
               ),
               data: (pets) {
-                if (pets.isEmpty) {
-                  return Center(
-                    child: Text(AppStrings.noPetsFound),
-                  );
+                final uiPets =
+                    pets.map(PetSummaryUiModel.fromEntity).toList();
+
+                if (uiPets.isEmpty) {
+                  return Center(child: Text(AppStrings.noPetsFound));
                 }
 
-                return RefreshIndicator(
-                  onRefresh: () => ref
-                      .read(petListControllerProvider.notifier)
-                      .refresh(),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSizes.screenPadding),
-                    itemBuilder: (context, index) {
-                      final pet = pets[index];
-                      return PetCard(
-                        id: pet.id,
-                        name: pet.name,
-                        type: pet.type,
-                        location: pet.location,
-                        imageUrl: pet.thumbnailUrl,
-                        isAdopted: pet.isAdopted,
-                        onTap: () {
-                          // TODO: navigate to pet_detail_page via app_router
-                          // context.pushNamed(AppRoutes.petDetails, extra: pet.id);
-                        },
-                      );
+                return ListView.separated(
+                  padding: const EdgeInsets.all(AppSizes.screenPadding),
+                  itemCount: uiPets.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSizes.listItemSpacing),
+                  itemBuilder: (context, i) => PetCard(
+                    id: uiPets[i].id,
+                    name: uiPets[i].name,
+                    type: uiPets[i].type,
+                    location: uiPets[i].location,
+                    imageUrl: uiPets[i].thumbnailUrl,
+                    isAdopted: uiPets[i].isAdopted,
+                    onTap: () {
+                      // TODO: navigate to pet details with id (router)
+                      // Example: context.pushNamed(AppRoutes.petDetails, extra: uiPets[i].id);
                     },
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSizes.listItemSpacing),
-                    itemCount: pets.length,
                   ),
                 );
               },
@@ -104,7 +93,7 @@ class _PetFilterBarState extends ConsumerState<_PetFilterBar> {
         children: [
           Expanded(
             child: DropdownButtonFormField<String>(
-              initialValue: _selectedType ?? 'All',
+              value: _selectedType ?? 'All',
               decoration: const InputDecoration(
                 labelText: 'Type',
               ),
@@ -117,21 +106,15 @@ class _PetFilterBarState extends ConsumerState<_PetFilterBar> {
                   )
                   .toList(),
               onChanged: (value) {
-                setState(() {
-                  _selectedType = value;
-                });
+                setState(() => _selectedType = value);
 
-                final filterType =
-                    (value == null || value == 'All') ? null : value;
-
-                ref
-                    .read(petListControllerProvider.notifier)
-                    .applyTypeFilter(filterType?.toLowerCase());
+                // In the stream approach, filters should be passed to the stream provider.
+                // For Week 2 baseline, we keep this UI only.
+                // TODO: convert petsStreamProvider to a family provider with filters.
               },
             ),
           ),
           const SizedBox(width: AppSizes.sm),
-          // Placeholder button – later you can open a full filter sheet
           IconButton(
             onPressed: () {
               // TODO: open advanced filter bottom sheet
