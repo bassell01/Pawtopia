@@ -8,11 +8,11 @@ class PetRepositoryImpl implements PetRepository {
   PetRepositoryImpl({
     required PetRemoteDataSource remoteDataSource,
     required PetLocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  })  : _remote = remoteDataSource,
+        _local = localDataSource;
 
-  final PetRemoteDataSource _remoteDataSource;
-  final PetLocalDataSource _localDataSource;
+  final PetRemoteDataSource _remote;
+  final PetLocalDataSource _local;
 
   @override
   Future<List<Pet>> getPets({
@@ -20,14 +20,13 @@ class PetRepositoryImpl implements PetRepository {
     String? location,
     bool? onlyAvailable,
   }) async {
-    final models = await _remoteDataSource.getPets(
+    final models = await _remote.getPets(
       type: type,
       location: location,
       onlyAvailable: onlyAvailable,
     );
-
-    await _localDataSource.cachePets(models);
-    return models.map((m) => m.toEntity()).toList();
+    await _local.cachePets(models);
+    return models.map((e) => e.toEntity()).toList();
   }
 
   @override
@@ -36,21 +35,21 @@ class PetRepositoryImpl implements PetRepository {
     String? location,
     bool? onlyAvailable,
   }) {
-    return _remoteDataSource
+    return _remote
         .watchPets(type: type, location: location, onlyAvailable: onlyAvailable)
-        .map((models) => models.map((m) => m.toEntity()).toList());
+        .map((e) => e.map((m) => m.toEntity()).toList());
   }
 
   @override
   Future<Pet> getPetDetails(String petId) async {
-    final model = await _remoteDataSource.getPetDetails(petId);
-    return model.toEntity();
+    return (await _remote.getPetDetails(petId)).toEntity();
   }
 
   @override
   Future<List<Pet>> searchPets({required String query}) async {
-    final models = await _remoteDataSource.searchPets(query: query);
-    return models.map((m) => m.toEntity()).toList();
+    return (await _remote.searchPets(query: query))
+        .map((e) => e.toEntity())
+        .toList();
   }
 
   @override
@@ -62,32 +61,38 @@ class PetRepositoryImpl implements PetRepository {
     int? maxAgeInMonths,
     bool? onlyAvailable,
   }) async {
-    final models = await _remoteDataSource.filterPets(
+    return (await _remote.filterPets(
       type: type,
       gender: gender,
       location: location,
       minAgeInMonths: minAgeInMonths,
       maxAgeInMonths: maxAgeInMonths,
       onlyAvailable: onlyAvailable,
-    );
-
-    return models.map((m) => m.toEntity()).toList();
+    ))
+        .map((e) => e.toEntity())
+        .toList();
   }
 
   @override
-  Future<String> addPet(Pet pet) async {
-    final model = PetModel.fromEntity(pet);
-    return _remoteDataSource.addPet(model);
+  Future<String> addPet(Pet pet) {
+    return _remote.addPet(PetModel.fromEntity(pet));
   }
 
   @override
-  Future<void> updatePet(Pet pet) async {
-    final model = PetModel.fromEntity(pet);
-    await _remoteDataSource.updatePet(model);
+  Future<void> updatePet(Pet pet) {
+    return _remote.updatePet(PetModel.fromEntity(pet));
   }
 
   @override
   Future<void> deletePet(String petId) {
-    return _remoteDataSource.deletePet(petId);
+    return _remote.deletePet(petId);
+  }
+
+  @override
+  Future<void> markAdopted({
+    required String petId,
+    required bool isAdopted,
+  }) {
+    return _remote.markAdopted(petId: petId, isAdopted: isAdopted);
   }
 }

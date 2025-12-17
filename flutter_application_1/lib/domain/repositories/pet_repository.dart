@@ -7,7 +7,6 @@ abstract class PetRepository {
     bool? onlyAvailable,
   });
 
-
   Stream<List<Pet>> watchPets({
     String? type,
     String? location,
@@ -15,7 +14,11 @@ abstract class PetRepository {
   });
 
   Future<Pet> getPetDetails(String petId);
-  Future<List<Pet>> searchPets({required String query});
+
+  Future<List<Pet>> searchPets({
+    required String query,
+  });
+
   Future<List<Pet>> filterPets({
     String? type,
     String? gender,
@@ -26,6 +29,14 @@ abstract class PetRepository {
   });
 
   Future<String> addPet(Pet pet);
+
   Future<void> updatePet(Pet pet);
+
   Future<void> deletePet(String petId);
+
+  
+  Future<void> markAdopted({
+    required String petId,
+    required bool isAdopted,
+  });
 }

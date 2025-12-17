@@ -10,7 +10,6 @@ abstract class PetRemoteDataSource {
     bool? onlyAvailable,
   });
 
-  /// ✅ NEW: realtime watch
   Stream<List<PetModel>> watchPets({
     String? type,
     String? location,
@@ -37,6 +36,11 @@ abstract class PetRemoteDataSource {
   Future<void> updatePet(PetModel pet);
 
   Future<void> deletePet(String petId);
+
+  Future<void> markAdopted({
+    required String petId,
+    required bool isAdopted,
+  });
 }
 
 class PetRemoteDataSourceImpl implements PetRemoteDataSource {
@@ -44,7 +48,7 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
 
   final FirebaseFirestoreService _firestoreService;
 
-  CollectionReference<Map<String, dynamic>> get _petsCollection =>
+  CollectionReference<Map<String, dynamic>> get _pets =>
       _firestoreService.collection('pets');
 
   @override
@@ -53,20 +57,16 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     String? location,
     bool? onlyAvailable,
   }) async {
-    Query<Map<String, dynamic>> query = _petsCollection;
+    Query<Map<String, dynamic>> q = _pets;
 
-    if (type != null && type.isNotEmpty) {
-      query = query.where('type', isEqualTo: type);
-    }
-    if (location != null && location.isNotEmpty) {
-      query = query.where('location', isEqualTo: location);
-    }
+    if (type != null) q = q.where('type', isEqualTo: type);
+    if (location != null) q = q.where('location', isEqualTo: location);
     if (onlyAvailable == true) {
-      query = query.where('isAdopted', isEqualTo: false);
+      q = q.where('isAdopted', isEqualTo: false);
     }
 
-    final snapshot = await query.get();
-    return snapshot.docs.map(PetModel.fromFirestore).toList();
+    final snap = await q.get();
+    return snap.docs.map(PetModel.fromFirestore).toList();
   }
 
   @override
@@ -75,42 +75,36 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     String? location,
     bool? onlyAvailable,
   }) {
-    Query<Map<String, dynamic>> query = _petsCollection;
+    Query<Map<String, dynamic>> q = _pets;
 
-    if (type != null && type.isNotEmpty) {
-      query = query.where('type', isEqualTo: type);
-    }
-    if (location != null && location.isNotEmpty) {
-      query = query.where('location', isEqualTo: location);
-    }
+    if (type != null) q = q.where('type', isEqualTo: type);
+    if (location != null) q = q.where('location', isEqualTo: location);
     if (onlyAvailable == true) {
-      query = query.where('isAdopted', isEqualTo: false);
+      q = q.where('isAdopted', isEqualTo: false);
     }
 
-    // Optional ordering (may require Firestore index depending on your filters)
-    query = query.orderBy('createdAt', descending: true);
+    q = q.orderBy('createdAt', descending: true);
 
-    return query.snapshots().map(
-          (snap) => snap.docs.map(PetModel.fromFirestore).toList(),
+    return q.snapshots().map(
+          (s) => s.docs.map(PetModel.fromFirestore).toList(),
         );
   }
 
   @override
   Future<PetModel> getPetDetails(String petId) async {
-    final doc = await _petsCollection.doc(petId).get();
+    final doc = await _pets.doc(petId).get();
     if (!doc.exists) throw Exception('Pet not found');
     return PetModel.fromFirestore(doc);
   }
 
   @override
   Future<List<PetModel>> searchPets({required String query}) async {
-    // Simple "startsWith" by name (improvable later)
-    final snapshot = await _petsCollection
+    final snap = await _pets
         .where('name', isGreaterThanOrEqualTo: query)
         .where('name', isLessThanOrEqualTo: '$query\uf8ff')
         .get();
 
-    return snapshot.docs.map(PetModel.fromFirestore).toList();
+    return snap.docs.map(PetModel.fromFirestore).toList();
   }
 
   @override
@@ -122,45 +116,49 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     int? maxAgeInMonths,
     bool? onlyAvailable,
   }) async {
-    Query<Map<String, dynamic>> query = _petsCollection;
+    Query<Map<String, dynamic>> q = _pets;
 
-    if (type != null && type.isNotEmpty) {
-      query = query.where('type', isEqualTo: type);
-    }
-    if (gender != null && gender.isNotEmpty) {
-      query = query.where('gender', isEqualTo: gender);
-    }
-    if (location != null && location.isNotEmpty) {
-      query = query.where('location', isEqualTo: location);
-    }
+    if (type != null) q = q.where('type', isEqualTo: type);
+    if (gender != null) q = q.where('gender', isEqualTo: gender);
+    if (location != null) q = q.where('location', isEqualTo: location);
     if (onlyAvailable == true) {
-      query = query.where('isAdopted', isEqualTo: false);
+      q = q.where('isAdopted', isEqualTo: false);
     }
-
     if (minAgeInMonths != null) {
-      query = query.where('ageInMonths', isGreaterThanOrEqualTo: minAgeInMonths);
+      q = q.where('ageInMonths', isGreaterThanOrEqualTo: minAgeInMonths);
     }
     if (maxAgeInMonths != null) {
-      query = query.where('ageInMonths', isLessThanOrEqualTo: maxAgeInMonths);
+      q = q.where('ageInMonths', isLessThanOrEqualTo: maxAgeInMonths);
     }
 
-    final snapshot = await query.get();
-    return snapshot.docs.map(PetModel.fromFirestore).toList();
+    final snap = await q.get();
+    return snap.docs.map(PetModel.fromFirestore).toList();
   }
 
   @override
   Future<String> addPet(PetModel pet) async {
-    final docRef = await _petsCollection.add(pet.toFirestore());
-    return docRef.id;
+    final ref = await _pets.add(pet.toFirestore());
+    return ref.id;
   }
 
   @override
   Future<void> updatePet(PetModel pet) async {
-    await _petsCollection.doc(pet.id).update(pet.toFirestore());
+    await _pets.doc(pet.id).update(pet.toFirestore());
   }
 
   @override
   Future<void> deletePet(String petId) async {
-    await _petsCollection.doc(petId).delete();
+    await _pets.doc(petId).delete();
+  }
+
+  @override
+  Future<void> markAdopted({
+    required String petId,
+    required bool isAdopted,
+  }) async {
+    await _pets.doc(petId).update({
+      'isAdopted': isAdopted,
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
   }
 }
