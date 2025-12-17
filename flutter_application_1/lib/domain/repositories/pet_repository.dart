@@ -1,22 +1,21 @@
 import '../entities/pets/pet.dart';
 
 abstract class PetRepository {
-  /// Get all pets (you can later add pagination).
   Future<List<Pet>> getPets({
     String? type,
     String? location,
-    bool? onlyAvailable, // if true → not adopted
+    bool? onlyAvailable,
   });
 
-  /// Get single pet by id.
+
+  Stream<List<Pet>> watchPets({
+    String? type,
+    String? location,
+    bool? onlyAvailable,
+  });
+
   Future<Pet> getPetDetails(String petId);
-
-  /// Search by text (name, breed, description, etc.).
-  Future<List<Pet>> searchPets({
-    required String query,
-  });
-
-  /// Filter with multiple options (type, age range, gender, location).
+  Future<List<Pet>> searchPets({required String query});
   Future<List<Pet>> filterPets({
     String? type,
     String? gender,
@@ -26,8 +25,7 @@ abstract class PetRepository {
     bool? onlyAvailable,
   });
 
-  /// CRUD
-  Future<String> addPet(Pet pet);        // returns generated id
+  Future<String> addPet(Pet pet);
   Future<void> updatePet(Pet pet);
   Future<void> deletePet(String petId);
 }

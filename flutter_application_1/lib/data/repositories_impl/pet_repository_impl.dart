@@ -20,7 +20,6 @@ class PetRepositoryImpl implements PetRepository {
     String? location,
     bool? onlyAvailable,
   }) async {
-    // You can add try/catch & fallback to local cache later.
     final models = await _remoteDataSource.getPets(
       type: type,
       location: location,
@@ -29,6 +28,17 @@ class PetRepositoryImpl implements PetRepository {
 
     await _localDataSource.cachePets(models);
     return models.map((m) => m.toEntity()).toList();
+  }
+
+  @override
+  Stream<List<Pet>> watchPets({
+    String? type,
+    String? location,
+    bool? onlyAvailable,
+  }) {
+    return _remoteDataSource
+        .watchPets(type: type, location: location, onlyAvailable: onlyAvailable)
+        .map((models) => models.map((m) => m.toEntity()).toList());
   }
 
   @override
@@ -67,8 +77,7 @@ class PetRepositoryImpl implements PetRepository {
   @override
   Future<String> addPet(Pet pet) async {
     final model = PetModel.fromEntity(pet);
-    final id = await _remoteDataSource.addPet(model);
-    return id;
+    return _remoteDataSource.addPet(model);
   }
 
   @override

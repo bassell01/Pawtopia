@@ -10,6 +10,13 @@ abstract class PetRemoteDataSource {
     bool? onlyAvailable,
   });
 
+  /// ✅ NEW: realtime watch
+  Stream<List<PetModel>> watchPets({
+    String? type,
+    String? location,
+    bool? onlyAvailable,
+  });
+
   Future<PetModel> getPetDetails(String petId);
 
   Future<List<PetModel>> searchPets({
@@ -63,17 +70,41 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
   }
 
   @override
+  Stream<List<PetModel>> watchPets({
+    String? type,
+    String? location,
+    bool? onlyAvailable,
+  }) {
+    Query<Map<String, dynamic>> query = _petsCollection;
+
+    if (type != null && type.isNotEmpty) {
+      query = query.where('type', isEqualTo: type);
+    }
+    if (location != null && location.isNotEmpty) {
+      query = query.where('location', isEqualTo: location);
+    }
+    if (onlyAvailable == true) {
+      query = query.where('isAdopted', isEqualTo: false);
+    }
+
+    // Optional ordering (may require Firestore index depending on your filters)
+    query = query.orderBy('createdAt', descending: true);
+
+    return query.snapshots().map(
+          (snap) => snap.docs.map(PetModel.fromFirestore).toList(),
+        );
+  }
+
+  @override
   Future<PetModel> getPetDetails(String petId) async {
     final doc = await _petsCollection.doc(petId).get();
-    if (!doc.exists) {
-      throw Exception('Pet not found');
-    }
+    if (!doc.exists) throw Exception('Pet not found');
     return PetModel.fromFirestore(doc);
   }
 
   @override
   Future<List<PetModel>> searchPets({required String query}) async {
-    // Simple implementation: search by name (you can improve later)
+    // Simple "startsWith" by name (improvable later)
     final snapshot = await _petsCollection
         .where('name', isGreaterThanOrEqualTo: query)
         .where('name', isLessThanOrEqualTo: '$query\uf8ff')
@@ -106,7 +137,6 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       query = query.where('isAdopted', isEqualTo: false);
     }
 
-    // Age range is tricky with Firestore; you might store numeric ageInMonths
     if (minAgeInMonths != null) {
       query = query.where('ageInMonths', isGreaterThanOrEqualTo: minAgeInMonths);
     }
