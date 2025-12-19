@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/auth/user.dart';
 import '../../providers/auth/auth_providers.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
+
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -48,13 +51,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.of(context).pushReplacementNamed('/home');
+      context.go(AppRoutes.home);
+
     }
   }
 
   void _navigateToLogin() {
-    Navigator.of(context).pop();
-  }
+  context.go(AppRoutes.login);
+}
+
 
   @override
   Widget build(BuildContext context) {
