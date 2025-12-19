@@ -1,4 +1,5 @@
 import '../../../domain/entities/profile/user_profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserProfileModel extends UserProfile {
   const UserProfileModel({
@@ -16,26 +17,31 @@ class UserProfileModel extends UserProfile {
     super.updatedAt,
   });
 
-  factory UserProfileModel.fromJson(Map<String, dynamic> json) {
-    return UserProfileModel(
-      userId: json['userId'] as String,
-      email: json['email'] as String,
-      displayName: json['displayName'] as String?,
-      photoUrl: json['photoUrl'] as String?,
-      phoneNumber: json['phoneNumber'] as String?,
-      bio: json['bio'] as String?,
-      address: json['address'] as String?,
-      city: json['city'] as String?,
-      state: json['state'] as String?,
-      zipCode: json['zipCode'] as String?,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
-    );
+factory UserProfileModel.fromJson(Map<String, dynamic> json) {
+    DateTime? _toDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
+
+  return UserProfileModel(
+    userId: json['userId'] as String,
+    email: json['email'] as String,
+    displayName: json['displayName'] as String?,
+    photoUrl: json['photoUrl'] as String?,
+    phoneNumber: json['phoneNumber'] as String?,
+    bio: json['bio'] as String?,
+    address: json['address'] as String?,
+    city: json['city'] as String?,
+    state: json['state'] as String?,
+    zipCode: json['zipCode'] as String?,
+    createdAt: _toDate(json['createdAt']),
+    updatedAt: _toDate(json['updatedAt']),
+  );
+}
+
 
   Map<String, dynamic> toJson() {
     return {

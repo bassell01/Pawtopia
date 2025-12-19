@@ -60,9 +60,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       // Update last login time
-      await firestore.collection('users').doc(credential.user!.uid).update({
+      await firestore.collection('users').doc(credential.user!.uid).set({
         'lastLoginAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
+
 
       return await _getUserModel(credential.user!.uid);
     } on firebase_auth.FirebaseAuthException catch (e) {
