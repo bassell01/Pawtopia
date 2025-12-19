@@ -14,4 +14,7 @@ class FirebaseFirestoreService {
   Future<void> setDoc(String docPath, Map<String, dynamic> data, {bool merge = true}) {
     return _db.doc(docPath).set(data, SetOptions(merge: merge));
   }
+  Future<T> runTransaction<T>(Future<T> Function(Transaction tx) action) {
+    return _db.runTransaction<T>((tx) => action(tx));
+  }
 }
