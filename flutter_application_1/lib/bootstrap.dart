@@ -14,6 +14,7 @@ Future<void> bootstrap() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    print('🔥 Firebase initialized: ${Firebase.apps.first.name}');
   }
 
   await initDependencies();
