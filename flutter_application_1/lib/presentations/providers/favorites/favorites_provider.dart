@@ -2,14 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/firebase_firestore_service.dart';
 import '../../../data/datasources/favorites/favorites_remote_data_source.dart';
-import '../../../data/datasources/pets/pet_remote_data_source.dart';
 import '../../../data/repositories_impl/favorites_repository_impl.dart';
 import '../../../domain/repositories/favorites_repository.dart';
 import '../../../domain/usecases/favorites/add_to_favorites.dart';
 import '../../../domain/usecases/favorites/get_favorites.dart';
 import '../../../domain/usecases/favorites/remove_from_favorites.dart';
 
-import '../auth/auth_providers.dart'; // Dev2: must exist
+import '../auth/auth_state_provider.dart'; // Dev2: must exist
+
 import '../pets/pet_providers.dart';  // provides petRemoteDataSourceProvider
 
 final favoritesRemoteDataSourceProvider = Provider<FavoritesRemoteDataSource>((ref) {
@@ -44,5 +44,5 @@ final favoritePetsProvider = FutureProvider.autoDispose((ref) async {
   if (user == null) return <dynamic>[];
 
   final usecase = ref.watch(getFavoritePetsUseCaseProvider);
-  return usecase(user.id);
+  return usecase(user.uid);
 });

@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 import '../di/injection_container.dart';
 import 'route_guard.dart';
-import '../../presentations/pages/home/ui_kit_page.dart';
-
-import '../../presentations/pages/auth/splash_page.dart';
+//import '../../presentations/pages/home/ui_kit_page.dart';
+//import '../../presentations/pages/auth/splash_page.dart';
 import '../../presentations/pages/auth/login_page.dart';
 import '../../presentations/pages/auth/register_page.dart';
 import '../../presentations/pages/home/home_page.dart';
@@ -24,7 +23,7 @@ return GoRouter(
     GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginPage()),
     GoRoute(path: AppRoutes.register, builder: (_, _) => const RegisterPage()),
     GoRoute(path: AppRoutes.adminDashboard, builder: (_, _) => const AdminDashboardPage()),
-    GoRoute(path: AppRoutes.uiKit, builder: (_, _) => const UiKitPage()),
+    //GoRoute(path: AppRoutes.uiKit, builder: (_, _) => const UiKitPage()),
     GoRoute(
         path: AppRoutes.pets,
         builder: (_, _) => const PetListPage(),

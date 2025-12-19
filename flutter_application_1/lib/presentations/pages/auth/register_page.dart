@@ -172,7 +172,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                   // Role selection
                   DropdownButtonFormField<UserRole>(
-                    value: _selectedRole,
+                    initialValue: _selectedRole,
                     decoration: const InputDecoration(
                       labelText: 'I am a',
                       prefixIcon: Icon(Icons.badge),

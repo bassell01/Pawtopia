@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/chat/chat_thread.dart';
 import '../../domain/entities/chat/message.dart';
