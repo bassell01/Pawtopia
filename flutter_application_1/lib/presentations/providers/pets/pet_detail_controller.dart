@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/pets/pet.dart';
 import '../../../domain/usecases/pets/get_pet_details.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 class PetDetailController extends StateNotifier<AsyncValue<Pet>> {
   PetDetailController({required GetPetDetails getPetDetails})

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FirebaseFirestoreService {
   FirebaseFirestoreService(this._db);
@@ -14,7 +15,16 @@ class FirebaseFirestoreService {
   Future<void> setDoc(String docPath, Map<String, dynamic> data, {bool merge = true}) {
     return _db.doc(docPath).set(data, SetOptions(merge: merge));
   }
-  Future<T> runTransaction<T>(Future<T> Function(Transaction tx) action) {
-    return _db.runTransaction<T>((tx) => action(tx));
+  Future<T> runTransaction<T>(
+    Future<T> Function(Transaction tx) handler,
+  ) {
+    return _db.runTransaction(handler);
   }
 }
+
+final firebaseFirestoreServiceProvider = Provider<FirebaseFirestoreService>((ref) {
+  return FirebaseFirestoreService(FirebaseFirestore.instance);
+});
+
+  
+

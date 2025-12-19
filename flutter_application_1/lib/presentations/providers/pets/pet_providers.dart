@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/services/firebase_firestore_service.dart';
 import '../../../data/datasources/pets/pet_local_data_source.dart';
@@ -17,7 +16,6 @@ import '../../../domain/usecases/pets/update_pet.dart';
 import '../../../domain/usecases/pets/mark_adopted.dart';
 
 import 'pet_detail_controller.dart';
-import 'pet_list_controller.dart';
 import 'mark_adopted_controller.dart';
 
 final petRemoteDataSourceProvider = Provider<PetRemoteDataSource>((ref) {

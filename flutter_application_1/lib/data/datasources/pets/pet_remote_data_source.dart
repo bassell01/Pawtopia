@@ -49,7 +49,7 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
   final FirebaseFirestoreService _firestoreService;
 
   CollectionReference<Map<String, dynamic>> get _pets =>
-      _firestoreService.collection('pets');
+      _firestoreService.col('pets');
 
   @override
   Future<List<PetModel>> getPets({
