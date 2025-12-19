@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
+
 
 import '../../providers/chat/chat_threads_controller.dart';
 import '../../providers/chat/chat_messages_controller.dart';
@@ -83,9 +86,27 @@ class _ChatTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      return const Center(child: Text('Please login to use chat'));
-    }
+  if (user == null) {
+  return Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('You need to login to use chat.'),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: () => context.go(AppRoutes.login),
+          icon: const Icon(Icons.login),
+          label: const Text('Login'),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => context.go(AppRoutes.register),
+          child: const Text('Create account'),
+        ),
+      ],
+    ),
+  );
+}
 
     final threadsAsync =
         ref.watch(chatThreadsControllerProvider(user.uid));

@@ -17,7 +17,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final guard = const RouteGuard();
 
 return GoRouter(
-initialLocation: AppRoutes.register,
+initialLocation: AppRoutes.home,
   routes: [
     GoRoute(path: AppRoutes.home, builder: (_, _) => const HomePage()),
     GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginPage()),

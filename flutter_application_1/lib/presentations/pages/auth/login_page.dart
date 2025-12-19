@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth/auth_providers.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
+
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -32,7 +35,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
 
     if (success && mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (success && mounted) {
+        context.go(AppRoutes.home);
+}
+
     }
   }
 
@@ -41,17 +47,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         await ref.read(authControllerProvider.notifier).signInWithGoogle();
 
     if (success && mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (success && mounted) {
+        context.go(AppRoutes.home);
+}
+
     }
   }
 
   void _navigateToRegister() {
-    Navigator.of(context).pushNamed('/register');
+    context.go(AppRoutes.register);
+
   }
 
   void _navigateToForgotPassword() {
-    Navigator.of(context).pushNamed('/forgot-password');
-  }
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Forgot password not implemented yet')),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
