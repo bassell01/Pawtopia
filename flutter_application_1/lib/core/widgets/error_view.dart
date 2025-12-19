@@ -7,7 +7,7 @@ class ErrorView extends StatelessWidget {
   const ErrorView({
     super.key,
     required this.message,
-    this.onRetry, 
+    this.onRetry,
   });
 
   @override
@@ -18,9 +18,15 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Icon(
+              Icons.error_outline,
+              size: 40,
+            ),
+            const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
