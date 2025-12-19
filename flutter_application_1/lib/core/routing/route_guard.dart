@@ -1,22 +1,45 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+
 import '../constants/app_routes.dart';
 
 class RouteGuard {
-  RouteGuard(this._auth);
-  final FirebaseAuth _auth;
+  const RouteGuard();
 
-  String? requireAuth(GoRouterState state) {
-    final user = _auth.currentUser;
-    final isAuthPage = state.matchedLocation == AppRoutes.login ||
-        state.matchedLocation == AppRoutes.register;
+  /// Returns a path to redirect to, or null to allow navigation.
+  String? redirect({
+    required String location,
+    required bool isLoggedIn,
+    required String? role,
+    required bool authLoading,
+    required bool roleLoading,
+  }) {
+    // While loading (splash time), keep user on splash
+    if (authLoading || (isLoggedIn && roleLoading)) {
+      return location == AppRoutes.splash ? null : AppRoutes.splash;
+    }
 
-    // not logged in → force login
-    if (user == null && !isAuthPage) return AppRoutes.login;
+    final isAuthRoute = location == AppRoutes.login || location == AppRoutes.register;
+    final isSplash = location == AppRoutes.splash;
+    final isAdminRoute = location.startsWith(AppRoutes.adminDashboard);
 
-    // logged in → block login/register
-    if (user != null && isAuthPage) return AppRoutes.home;
+    // Not logged in -> allow only auth routes (and splash)
+    if (!isLoggedIn) {
+      if (isAuthRoute || isSplash) return null;
+      return AppRoutes.login;
+    }
 
+    // Logged in -> prevent going back to auth routes or splash
+    if (isAuthRoute || isSplash) {
+      // Admin users go to admin dashboard; others go home
+      return (role == 'admin') ? AppRoutes.adminDashboard : AppRoutes.home;
+    }
+
+    // Admin-only area protection
+    if (isAdminRoute && role != 'admin') {
+      return AppRoutes.home;
+    }
+
+    // Allowed
     return null;
   }
 }
