@@ -25,7 +25,7 @@ class FavoritesRemoteDataSourceImpl implements FavoritesRemoteDataSource {
   final FirebaseFirestoreService _firestoreService;
 
   CollectionReference<Map<String, dynamic>> get _favoritesCollection =>
-      _firestoreService.collection('favorites');
+      _firestoreService.col('favorites');
 
   @override
   Future<List<FavoriteModel>> getFavorites(String userId) async {

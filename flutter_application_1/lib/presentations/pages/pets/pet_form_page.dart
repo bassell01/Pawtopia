@@ -20,14 +20,15 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
   late final TextEditingController _location;
   late final TextEditingController _description;
 
+  bool _submitting = false;
+
   @override
   void initState() {
     super.initState();
     _name = TextEditingController(text: widget.existing?.name ?? '');
     _type = TextEditingController(text: widget.existing?.type ?? '');
     _location = TextEditingController(text: widget.existing?.location ?? '');
-    _description =
-        TextEditingController(text: widget.existing?.description ?? '');
+    _description = TextEditingController(text: widget.existing?.description ?? '');
   }
 
   @override
@@ -80,37 +81,56 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () async {
-                  if (!_formKey.currentState!.validate()) return;
+                onPressed: _submitting
+                    ? null
+                    : () async {
+                        if (!_formKey.currentState!.validate()) return;
 
-                  final now = DateTime.now();
+                        setState(() => _submitting = true);
 
-                  final pet = Pet(
-                    id: widget.existing?.id ?? '',
-                    name: _name.text.trim(),
-                    type: _type.text.trim().toLowerCase(),
-                    location: _location.text.trim().isEmpty
-                        ? null
-                        : _location.text.trim(),
-                    description: _description.text.trim().isEmpty
-                        ? null
-                        : _description.text.trim(),
-                    ownerId: widget.existing?.ownerId ?? 'TODO_OWNER_ID',
-                    createdAt: widget.existing?.createdAt ?? now,
-                    updatedAt: now,
-                    photoUrls: widget.existing?.photoUrls ?? const [],
-                    isAdopted: widget.existing?.isAdopted ?? false,
-                  );
+                        final now = DateTime.now();
 
-                  if (widget.existing == null) {
-                    await addPet(pet);
-                  } else {
-                    await updatePet(pet);
-                  }
+                        final pet = Pet(
+                          id: widget.existing?.id ?? '',
+                          name: _name.text.trim(),
+                          type: _type.text.trim().toLowerCase(),
+                          location: _location.text.trim().isEmpty
+                              ? null
+                              : _location.text.trim(),
+                          description: _description.text.trim().isEmpty
+                              ? null
+                              : _description.text.trim(),
+                          ownerId: widget.existing?.ownerId ?? 'TODO_OWNER_ID',
+                          createdAt: widget.existing?.createdAt ?? now,
+                          updatedAt: now,
+                          photoUrls: widget.existing?.photoUrls ?? const [],
+                          isAdopted: widget.existing?.isAdopted ?? false,
+                        );
 
-                  if (mounted) Navigator.pop(context);
-                },
-                child: Text(widget.existing == null ? 'Create' : 'Save'),
+                        try {
+                          if (widget.existing == null) {
+                            await addPet(pet);
+                          } else {
+                            await updatePet(pet);
+                          }
+
+                        
+                          if (!context.mounted) return;
+
+                          Navigator.pop(context);
+                        } catch (e) {
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed: $e')),
+                          );
+                        } finally {
+                          if (mounted) setState(() => _submitting = false);
+                        }
+                      },
+                child: Text(
+                  _submitting ? 'Saving...' : (widget.existing == null ? 'Create' : 'Save'),
+                ),
               ),
             ],
           ),
