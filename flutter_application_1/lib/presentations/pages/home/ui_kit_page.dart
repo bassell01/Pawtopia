@@ -14,10 +14,12 @@ class UiKitPage extends StatefulWidget {
 }
 
 class _UiKitPageState extends State<UiKitPage> {
+  final _formKey = GlobalKey<FormState>();
+
   final emailController = TextEditingController();
   final passController = TextEditingController();
 
-  bool loading = false;
+  bool localLoading = false;
 
   @override
   void dispose() {
@@ -31,9 +33,7 @@ class _UiKitPageState extends State<UiKitPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('UI Kit (Day 5 Test)'),
-      ),
+      appBar: AppBar(title: const Text('UI Kit (Day 5 Test)')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -44,62 +44,136 @@ class _UiKitPageState extends State<UiKitPage> {
           Text('This is caption text', style: textTheme.bodySmall),
           const Divider(height: 32),
 
-          Text('Text Fields', style: textTheme.titleLarge),
+          Text('Text Fields + Validation', style: textTheme.titleLarge),
           const SizedBox(height: 12),
-          AppTextField(
-            controller: emailController,
-            label: 'Email',
-          ),
-          const SizedBox(height: 12),
-          AppTextField(
-            controller: passController,
-            label: 'Password',
-            obscure: true,
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                AppTextField(
+                  controller: emailController,
+                  label: 'Email',
+                  hintText: 'name@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  prefixIcon: Icons.email_outlined,
+                  validator: (v) {
+                    final value = (v ?? '').trim();
+                    if (value.isEmpty) return 'Email is required';
+                    if (!value.contains('@')) return 'Invalid email';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: passController,
+                  label: 'Password',
+                  hintText: 'Min 6 chars',
+                  obscure: true, // tests password toggle
+                  textInputAction: TextInputAction.done,
+                  prefixIcon: Icons.lock_outline,
+                  validator: (v) {
+                    final value = (v ?? '');
+                    if (value.isEmpty) return 'Password is required';
+                    if (value.length < 6) return 'Too short';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  text: 'Validate Form',
+                  icon: Icons.check_circle_outline,
+                  onPressed: () {
+                    final ok = _formKey.currentState?.validate() ?? false;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(ok ? 'Form OK ✅' : 'Form has errors ❌')),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
           const Divider(height: 32),
 
           Text('Buttons', style: textTheme.titleLarge),
           const SizedBox(height: 12),
+
           AppButton(
             text: 'Primary Button',
+            icon: Icons.pets,
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('AppButton works ✅')),
+                const SnackBar(content: Text('Primary pressed ✅')),
               );
             },
           ),
           const SizedBox(height: 12),
+
+          AppButton(
+            text: 'Secondary Button',
+            variant: AppButtonVariant.secondary,
+            icon: Icons.layers_outlined,
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Secondary pressed ✅')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          AppButton(
+            text: 'Danger Button',
+            variant: AppButtonVariant.danger,
+            icon: Icons.delete_outline,
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Danger pressed ⚠️')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
           AppButton(
             text: 'Loading Button',
             loading: true,
             onPressed: () {},
           ),
           const SizedBox(height: 12),
+
           AppButton(
             text: 'Disabled Button',
             onPressed: null,
           ),
           const SizedBox(height: 12),
+
           AppButton(
-            text: loading ? 'Stop Local Loading' : 'Start Local Loading',
-            onPressed: () => setState(() => loading = !loading),
+            text: localLoading ? 'Stop Local Loading' : 'Start Local Loading',
+            onPressed: () => setState(() => localLoading = !localLoading),
           ),
+
           const Divider(height: 32),
 
           Text('State Widgets', style: textTheme.titleLarge),
           const SizedBox(height: 12),
-          const SizedBox(
-            height: 80,
-            child: LoadingIndicator(),
+
+          const SizedBox(height: 80, child: LoadingIndicator()),
+          const SizedBox(height: 12),
+
+          ErrorView(
+            message: 'Sample error message ❌',
+            onRetry: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Retry tapped ✅')),
+              );
+            },
           ),
           const SizedBox(height: 12),
-          const ErrorView(message: 'Sample error message ❌'),
-          const SizedBox(height: 12),
+
           const EmptyState(text: 'Nothing here yet 👀'),
           const SizedBox(height: 24),
 
           Text(
-            'If everything looks consistent and no UI is duplicated, Day 5 is done ✅',
+            'If everything looks consistent and reusable, Day 5 is done ✅',
             style: textTheme.bodyMedium,
           ),
         ],
