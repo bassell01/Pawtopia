@@ -15,7 +15,7 @@ import '../../presentations/pages/pets/pet_list_page.dart';
 import '../../presentations/pages/pets/pet_detail_page.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final guard = RouteGuard(sl());
+  final guard = const RouteGuard();
 
 return GoRouter(
   initialLocation: AppRoutes.home,
