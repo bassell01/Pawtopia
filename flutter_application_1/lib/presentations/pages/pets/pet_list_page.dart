@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -10,7 +11,11 @@ import '../../../core/widgets/loading_indicator.dart';
 
 import '../../providers/pets/pet_list_controller.dart';
 import '../../providers/pets/pet_providers.dart';
+import '../../providers/profile/profile_providers.dart';
 import '../../widgets/pets/pet_card.dart';
+
+import '../../../domain/entities/auth/user.dart' show UserRole;
+import '../../providers/auth/auth_providers.dart';
 
 class PetListPage extends ConsumerStatefulWidget {
   const PetListPage({super.key});
@@ -25,12 +30,15 @@ class _PetListPageState extends ConsumerState<PetListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filter = PetsStreamFilter(
-      type: _type,
-      onlyAvailable: _onlyAvailable,
-    );
+    final filter = PetsStreamFilter(type: _type, onlyAvailable: _onlyAvailable);
 
     final petsAsync = ref.watch(petsStreamProvider(filter));
+
+    final authState = ref.watch(authControllerProvider);
+    final u = authState.user;
+
+    final canAddPets =
+        u != null && (u.role == UserRole.shelter || u.role == UserRole.admin);
 
     return Scaffold(
       appBar: AppBar(
@@ -43,6 +51,15 @@ class _PetListPageState extends ConsumerState<PetListPage> {
           ),
         ],
       ),
+
+      // ✅ FAB visible only for shelter/admin
+      floatingActionButton: canAddPets
+          ? FloatingActionButton(
+              onPressed: () => context.push(AppRoutes.addPet),
+              child: const Icon(Icons.add),
+            )
+          : null,
+
       body: Column(
         children: [
           _PetFilterBar(
@@ -57,8 +74,7 @@ class _PetListPageState extends ConsumerState<PetListPage> {
                 onRetry: () => ref.invalidate(petsStreamProvider(filter)),
               ),
               data: (pets) {
-                final uiPets =
-                    pets.map(PetSummaryUiModel.fromEntity).toList();
+                final uiPets = pets.map(PetSummaryUiModel.fromEntity).toList();
 
                 if (uiPets.isEmpty) {
                   return Center(child: Text(AppStrings.noPetsFound));
@@ -82,7 +98,10 @@ class _PetListPageState extends ConsumerState<PetListPage> {
                       isAdopted: uiPets[i].isAdopted,
                       onTap: () {
                         context.push(
-                          AppRoutes.petDetails.replaceFirst(':id', uiPets[i].id),
+                          AppRoutes.petDetails.replaceFirst(
+                            ':id',
+                            uiPets[i].id,
+                          ),
                         );
                       },
                     ),
@@ -118,14 +137,11 @@ class _PetFilterBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(AppSizes.screenPadding),
       child: DropdownButtonFormField<String>(
-        // ✅ Flutter 3.33+: use initialValue instead of value
+        // Flutter 3.33+ ✅
         initialValue: dropdownValue(),
         decoration: const InputDecoration(labelText: 'Type'),
         items: types
-            .map((t) => DropdownMenuItem(
-                  value: t,
-                  child: Text(t),
-                ))
+            .map((t) => DropdownMenuItem(value: t, child: Text(t)))
             .toList(),
         onChanged: (value) {
           if (value == null || value == 'All') {

@@ -19,8 +19,13 @@ class AppRoutes {
   // Admin
   static const adminDashboard = '/admin';
 
+ // Add Pet
+  static const addPet = '/pets/add';
+  
   //pets
   
   static const petDetails = '/pets/:id';
+
+  
 }
 

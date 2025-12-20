@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/firebase_firestore_service.dart';
@@ -58,6 +59,7 @@ final deletePetUseCaseProvider =
 final markAdoptedUseCaseProvider =
     Provider((ref) => MarkAdopted(ref.watch(petRepositoryProvider)));
 
+@immutable
 class PetsStreamFilter {
   final String? type;
   final String? location;
@@ -66,8 +68,19 @@ class PetsStreamFilter {
   const PetsStreamFilter({
     this.type,
     this.location,
-    this.onlyAvailable = true,
+    required this.onlyAvailable,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PetsStreamFilter &&
+          runtimeType == other.runtimeType &&
+          type == other.type &&
+          onlyAvailable == other.onlyAvailable;
+
+  @override
+  int get hashCode => Object.hash(type, onlyAvailable);
 }
 
 final petsStreamProvider =

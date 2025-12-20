@@ -69,6 +69,7 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     return snap.docs.map(PetModel.fromFirestore).toList();
   }
 
+
   @override
   Stream<List<PetModel>> watchPets({
     String? type,
@@ -83,11 +84,18 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       q = q.where('isAdopted', isEqualTo: false);
     }
 
-    q = q.orderBy('createdAt', descending: true);
+    return q.snapshots().map((s) {
+      final list = s.docs.map(PetModel.fromFirestore).toList();
 
-    return q.snapshots().map(
-          (s) => s.docs.map(PetModel.fromFirestore).toList(),
-        );
+      // ✅ Client-side sort (no index needed)
+      list.sort((a, b) {
+        final ad = a.createdAt;
+        final bd = b.createdAt;
+        return bd.compareTo(ad); // newest first
+      });
+
+      return list;
+    });
   }
 
   @override

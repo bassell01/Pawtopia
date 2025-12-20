@@ -11,6 +11,9 @@ import '../../providers/chat/chat_threads_controller.dart';
 import '../../providers/chat/chat_messages_controller.dart';
 import '../../providers/chat/chat_providers.dart';
 
+import '../pets/pet_list_page.dart';
+
+
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -57,9 +60,10 @@ class _PetsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Pets tab'));
+    return const PetListPage();
   }
 }
+
 
 class _AdoptionTab extends StatelessWidget {
   const _AdoptionTab();
