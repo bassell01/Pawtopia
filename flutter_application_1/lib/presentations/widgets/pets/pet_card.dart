@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../favorites/favorite_icon_button.dart';
+
 class PetCard extends StatelessWidget {
   const PetCard({
     super.key,
@@ -32,6 +34,7 @@ class PetCard extends StatelessWidget {
           height: 100,
           child: Row(
             children: [
+            
               AspectRatio(
                 aspectRatio: 1,
                 child: imageUrl != null && imageUrl!.isNotEmpty
@@ -44,6 +47,8 @@ class PetCard extends StatelessWidget {
                         child: const Icon(Icons.pets),
                       ),
               ),
+
+             
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -70,10 +75,7 @@ class PetCard extends StatelessWidget {
                           if (location != null && location!.isNotEmpty)
                             Row(
                               children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 14,
-                                ),
+                                const Icon(Icons.location_on, size: 14),
                                 const SizedBox(width: 4),
                                 Text(
                                   location!,
@@ -101,6 +103,15 @@ class PetCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+              ),
+
+      
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FavoriteIconButton(
+                  petId: id,
+                  activeColor: Colors.red,
                 ),
               ),
             ],

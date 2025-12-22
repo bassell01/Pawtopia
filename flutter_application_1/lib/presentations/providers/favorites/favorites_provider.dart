@@ -8,9 +8,9 @@ import '../../../domain/usecases/favorites/add_to_favorites.dart';
 import '../../../domain/usecases/favorites/get_favorites.dart';
 import '../../../domain/usecases/favorites/remove_from_favorites.dart';
 
-import '../auth/auth_state_provider.dart'; // Dev2: must exist
+import '../auth/auth_state_provider.dart'; 
 
-import '../pets/pet_providers.dart';  // provides petRemoteDataSourceProvider
+import '../pets/pet_providers.dart';  
 
 final favoritesRemoteDataSourceProvider = Provider<FavoritesRemoteDataSource>((ref) {
   final firestore = ref.watch(firebaseFirestoreServiceProvider);
@@ -38,11 +38,60 @@ final getFavoritePetsUseCaseProvider = Provider<GetFavoritePets>((ref) {
   return GetFavoritePets(ref.watch(favoritesRepositoryProvider));
 });
 
-/// ✅ Baseline: load favorite pets for current user (Future)
+
 final favoritePetsProvider = FutureProvider.autoDispose((ref) async {
-  final user = await ref.watch(authStateProvider.future); // Dev2
+  final user = await ref.watch(authStateProvider.future);
   if (user == null) return <dynamic>[];
 
   final usecase = ref.watch(getFavoritePetsUseCaseProvider);
   return usecase(user.uid);
+  
+});
+
+
+
+final isFavoriteProvider =
+    StreamProvider.family.autoDispose<bool, String>((ref, petId) async* {
+  final user = await ref.watch(authStateProvider.future);
+  if (user == null) {
+    yield false;
+    return;
+  }
+
+  final favs = await ref.watch(favoritePetsProvider.future);
+
+  
+  final isFav = favs.any((p) => (p as dynamic).id == petId);
+  yield isFav;
+});
+
+final toggleFavoriteProvider =
+    Provider.autoDispose<Future<void> Function(String petId)>((ref) {
+  final add = ref.watch(addToFavoritesUseCaseProvider);
+  final remove = ref.watch(removeFromFavoritesUseCaseProvider);
+
+  return (String petId) async {
+    final user = await ref.read(authStateProvider.future);
+    if (user == null) return;
+
+    final favs = await ref.read(favoritePetsProvider.future);
+    final isFav = favs.any((p) => (p as dynamic).id == petId);
+
+   if (isFav) {
+  await remove(
+    userId: user.uid,
+    petId: petId,
+  );
+} else {
+  await add(
+    userId: user.uid,
+    petId: petId,
+  );
+}
+
+
+   
+    ref.invalidate(favoritePetsProvider);
+    ref.invalidate(isFavoriteProvider(petId));
+  };
 });

@@ -11,6 +11,7 @@ import '../../providers/chat/chat_threads_controller.dart';
 import '../../providers/chat/chat_messages_controller.dart';
 import '../../providers/chat/chat_providers.dart';
 
+import '../favorites/favorites_page.dart';
 import '../pets/pet_list_page.dart';
 
 
@@ -28,6 +29,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final tabs = <Widget>[
       const _PetsTab(),
+      const FavoritesPage(),
       const _AdoptionTab(),
       const _ChatTab(), 
       const _ProfileTab(),
@@ -44,6 +46,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.pets), label: 'Pets'),
+          NavigationDestination(icon: Icon(Icons.favorite), label: 'Favorites'),
           NavigationDestination(icon: Icon(Icons.assignment), label: 'Adoption'),
           NavigationDestination(icon: Icon(Icons.chat), label: 'Chat'),
           NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/pets/pet.dart';
 import '../../../domain/usecases/pets/get_pets.dart';
 
-/// Simple UI model for list items
 class PetSummaryUiModel {
   final String id;
   final String name;
@@ -77,7 +76,6 @@ class PetListController
     }
   }
 
-  /// For simple pull-to-refresh in UI.
   Future<void> refresh() async {
     await loadPets(
       type: _currentTypeFilter,
@@ -85,7 +83,6 @@ class PetListController
     );
   }
 
-  /// Basic updates for filters – can be extended later.
   Future<void> applyTypeFilter(String? type) async {
     await loadPets(type: type, location: _currentLocationFilter);
   }

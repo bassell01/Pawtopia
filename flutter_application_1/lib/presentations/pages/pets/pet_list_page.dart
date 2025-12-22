@@ -12,8 +12,6 @@ import '../../providers/pets/pet_list_controller.dart';
 import '../../providers/pets/pet_providers.dart';
 import '../../widgets/pets/pet_card.dart';
 
-import '../../../domain/entities/auth/user.dart' show UserRole;
-import '../../providers/auth/auth_providers.dart';
 
 class PetListPage extends ConsumerStatefulWidget {
   const PetListPage({super.key});
