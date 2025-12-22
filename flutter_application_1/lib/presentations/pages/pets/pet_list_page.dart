@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -11,7 +10,6 @@ import '../../../core/widgets/loading_indicator.dart';
 
 import '../../providers/pets/pet_list_controller.dart';
 import '../../providers/pets/pet_providers.dart';
-import '../../providers/profile/profile_providers.dart';
 import '../../widgets/pets/pet_card.dart';
 
 import '../../../domain/entities/auth/user.dart' show UserRole;
@@ -33,13 +31,6 @@ class _PetListPageState extends ConsumerState<PetListPage> {
     final filter = PetsStreamFilter(type: _type, onlyAvailable: _onlyAvailable);
 
     final petsAsync = ref.watch(petsStreamProvider(filter));
-
-    final authState = ref.watch(authControllerProvider);
-    final u = authState.user;
-
-    final canAddPets =
-        u != null && (u.role == UserRole.shelter || u.role == UserRole.admin);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(AppStrings.petsTitle),
@@ -53,12 +44,13 @@ class _PetListPageState extends ConsumerState<PetListPage> {
       ),
 
       // ✅ FAB visible only for shelter/admin
-      floatingActionButton: canAddPets
-          ? FloatingActionButton(
-              onPressed: () => context.push(AppRoutes.addPet),
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton: 
+     FloatingActionButton(
+        onPressed: () => context.push(AppRoutes.addPet),
+        child: const Icon(Icons.add),
+      )
+    ,
+
 
       body: Column(
         children: [
@@ -158,3 +150,4 @@ class _PetFilterBar extends StatelessWidget {
 extension on String {
   String capitalize() => isEmpty ? this : this[0].toUpperCase() + substring(1);
 }
+
