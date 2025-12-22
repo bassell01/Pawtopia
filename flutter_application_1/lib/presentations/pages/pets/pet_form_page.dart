@@ -22,7 +22,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
   late final TextEditingController _description;
   late final TextEditingController _location;
   late final TextEditingController _photoUrls; // comma/newline separated
-  late final TextEditingController _ownerId;
 
   String? _gender; // male/female
   String? _size; // small/medium/large
@@ -42,7 +41,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
     _description = TextEditingController(text: p?.description ?? '');
     _location = TextEditingController(text: p?.location ?? '');
     _photoUrls = TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
-    _ownerId = TextEditingController(text: p?.ownerId ?? '');
 
     _gender = p?.gender;
     _size = p?.size;
@@ -58,7 +56,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
     _description.dispose();
     _location.dispose();
     _photoUrls.dispose();
-    _ownerId.dispose();
     super.dispose();
   }
 
@@ -85,10 +82,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
 
     final typeLower = _type.text.trim().toLowerCase();
 
-    final ownerId = _ownerId.text.trim().isEmpty
-        ? (existing?.ownerId ?? 'TODO_OWNER_ID')
-        : _ownerId.text.trim();
-
+  
     final pet = Pet(
       id: existing?.id ?? '',
       name: _name.text.trim(),
@@ -102,7 +96,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
       location: _location.text.trim().isEmpty ? null : _location.text.trim(),
       photoUrls: _parsePhotoUrls(_photoUrls.text),
       isAdopted: _isAdopted,
-      ownerId: ownerId,
+       ownerId: widget.existing?.ownerId ?? 'TODO_OWNER_ID',
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
@@ -240,23 +234,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
               ),
               const SizedBox(height: 12),
 
-              TextFormField(
-                controller: _ownerId,
-                decoration: const InputDecoration(
-                  labelText: 'Owner ID (required)',
-                  hintText: 'Shelter/individual userId',
-                ),
-                validator: (v) {
-                  final value = (v ?? '').trim();
-                  if (widget.existing != null) return null; // keep existing ok
-                  // For new pets, if left empty we fallback to TODO_OWNER_ID,
-                  // but warn to encourage correct data.
-                  if (value.isEmpty) {
-                    return 'Owner ID is required (enter your uid for now)';
-                  }
-                  return null;
-                },
-              ),
+             
               const SizedBox(height: 20),
 
               ElevatedButton(
