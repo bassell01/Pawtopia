@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
+
 import '../../providers/pets/pet_providers.dart';
+import 'pet_form_page.dart';
 
 class PetDetailPage extends ConsumerWidget {
   const PetDetailPage({super.key, required this.petId});
@@ -15,7 +17,56 @@ class PetDetailPage extends ConsumerWidget {
     final petAsync = ref.watch(petDetailControllerProvider(petId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pet Details')),
+      appBar: AppBar(
+        title: const Text('Pet Details'),
+        actions: [
+          // ✅ Edit button (always visible once pet is loaded)
+          petAsync.maybeWhen(
+            data: (pet) => IconButton(
+              tooltip: 'Edit pet',
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PetFormPage(existing: pet),
+                  ),
+                );
+              },
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+
+      // ✅ Center floating Adopt button
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: petAsync.maybeWhen(
+        data: (pet) {
+          // Optional: hide button if already adopted
+          if (pet.isAdopted == true) {
+            return const SizedBox.shrink();
+          }
+
+          return SizedBox(
+            width: MediaQuery.of(context).size.width * 0.75,
+            height: 52,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                final messenger = ScaffoldMessenger.of(context);
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Adopt request for: ${pet.name} (petId=$petId)'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.volunteer_activism),
+              label: const Text('Adopt'),
+            ),
+          );
+        },
+        orElse: () => const SizedBox.shrink(),
+      ),
+
       body: petAsync.when(
         loading: () => const Center(child: LoadingIndicator()),
         error: (e, _) => ErrorView(message: e.toString()),
@@ -39,6 +90,8 @@ class PetDetailPage extends ConsumerWidget {
               ],
               const SizedBox(height: 12),
               Text(pet.description ?? 'No description'),
+
+              const SizedBox(height: 80), // ✅ space so button doesn't cover content
             ],
           );
         },
