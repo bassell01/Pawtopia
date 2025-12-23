@@ -6,6 +6,8 @@ import '../../../core/widgets/loading_indicator.dart';
 
 import '../../providers/pets/pet_providers.dart';
 import 'pet_form_page.dart';
+import '../adoption/adoption_form_page.dart';
+
 
 class PetDetailPage extends ConsumerWidget {
   const PetDetailPage({super.key, required this.petId});
@@ -20,16 +22,13 @@ class PetDetailPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Pet Details'),
         actions: [
-          // ✅ Edit button (always visible once pet is loaded)
           petAsync.maybeWhen(
             data: (pet) => IconButton(
               tooltip: 'Edit pet',
               icon: const Icon(Icons.edit),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PetFormPage(existing: pet),
-                  ),
+                  MaterialPageRoute(builder: (_) => PetFormPage(existing: pet)),
                 );
               },
             ),
@@ -38,11 +37,9 @@ class PetDetailPage extends ConsumerWidget {
         ],
       ),
 
-      // ✅ Center floating Adopt button
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: petAsync.maybeWhen(
         data: (pet) {
-          // Optional: hide button if already adopted
           if (pet.isAdopted == true) {
             return const SizedBox.shrink();
           }
@@ -52,10 +49,12 @@ class PetDetailPage extends ConsumerWidget {
             height: 52,
             child: FloatingActionButton.extended(
               onPressed: () {
-                final messenger = ScaffoldMessenger.of(context);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text('Adopt request for: ${pet.name} (petId=$petId)'),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AdoptionFormPage(
+                      petId: pet.id, 
+                      ownerId: pet.ownerId, 
+                    ),
                   ),
                 );
               },
@@ -91,7 +90,9 @@ class PetDetailPage extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(pet.description ?? 'No description'),
 
-              const SizedBox(height: 80), // ✅ space so button doesn't cover content
+              const SizedBox(
+                height: 80,
+              ), 
             ],
           );
         },

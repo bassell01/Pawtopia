@@ -13,6 +13,8 @@ import '../../providers/chat/chat_providers.dart';
 
 import '../favorites/favorites_page.dart';
 import '../pets/pet_list_page.dart';
+import '../adoption/my_requests_page.dart';
+
 
 
 class HomePage extends ConsumerStatefulWidget {
@@ -73,7 +75,7 @@ class _AdoptionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Adoption tab'));
+    return const MyRequestsPage();
   }
 }
 

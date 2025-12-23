@@ -1,54 +1,90 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../domain/entities/adoption/adoption_request.dart';
 
 class AdoptionRequestModel extends AdoptionRequest {
   const AdoptionRequestModel({
     required super.id,
     required super.petId,
-    required super.adopterId,
-    required super.shelterId,
+    required super.ownerId,
+    required super.requesterId,
+    super.message,
     required super.status,
-    required super.note,
-    required super.createdAt,
+    super.createdAt,
+    super.updatedAt,
+    super.threadId,
   });
 
-  factory AdoptionRequestModel.fromMap(String id, Map<String, dynamic> map) {
-    final createdAt = map['createdAt'];
-    DateTime parsedCreatedAt;
-    if (createdAt is DateTime) {
-      parsedCreatedAt = createdAt;
-    } else if (createdAt != null && createdAt.toString().isNotEmpty) {
-      parsedCreatedAt = DateTime.tryParse(createdAt.toString()) ?? DateTime.now();
-    } else {
-      parsedCreatedAt = DateTime.now();
+  AdoptionRequestModel copyWith({
+    String? id,
+    String? petId,
+    String? ownerId,
+    String? requesterId,
+    String? message,
+    AdoptionStatus? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? threadId,
+  }) {
+    return AdoptionRequestModel(
+      id: id ?? this.id,
+      petId: petId ?? this.petId,
+      ownerId: ownerId ?? this.ownerId,
+      requesterId: requesterId ?? this.requesterId,
+      message: message ?? this.message,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      threadId: threadId ?? this.threadId,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      // (اختياري) تخزين id جوه الدوك
+      'id': id,
+      'petId': petId,
+      'ownerId': ownerId,
+      'requesterId': requesterId,
+      'message': message,
+      'status': status.name,
+      'threadId': threadId,
+
+  
+      if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
+      if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
+    };
+  }
+
+  factory AdoptionRequestModel.fromJson(
+    Map<String, dynamic> json, {
+    required String id,
+  }) {
+    AdoptionStatus parseStatus(dynamic v) {
+      final s = (v ?? 'pending').toString();
+      return AdoptionStatus.values.firstWhere(
+        (e) => e.name == s,
+        orElse: () => AdoptionStatus.pending,
+      );
+    }
+
+    DateTime? parseTime(dynamic v) {
+      if (v == null) return null;
+      if (v is Timestamp) return v.toDate();
+      if (v is DateTime) return v;
+      return null;
     }
 
     return AdoptionRequestModel(
       id: id,
-      petId: (map['petId'] ?? '') as String,
-      adopterId: (map['adopterId'] ?? '') as String,
-      shelterId: map['shelterId'] as String?,
-      status: (map['status'] ?? 'pending') as String,
-      note: map['note'] as String?,
-      createdAt: parsedCreatedAt,
+      petId: (json['petId'] ?? '') as String,
+      ownerId: (json['ownerId'] ?? '') as String,
+      requesterId: (json['requesterId'] ?? '') as String,
+      message: json['message'] as String?,
+      status: parseStatus(json['status']),
+      createdAt: parseTime(json['createdAt']),
+      updatedAt: parseTime(json['updatedAt']),
+      threadId: json['threadId'] as String?,
     );
   }
-
-  Map<String, dynamic> toMap() => {
-        'petId': petId,
-        'adopterId': adopterId,
-        'shelterId': shelterId,
-        'status': status,
-        'note': note,
-        'createdAt': createdAt.toIso8601String(),
-      };
-
-  AdoptionRequest toEntity() => AdoptionRequest(
-        id: id,
-        petId: petId,
-        adopterId: adopterId,
-        shelterId: shelterId,
-        status: status,
-        note: note,
-        createdAt: createdAt,
-      );
 }
