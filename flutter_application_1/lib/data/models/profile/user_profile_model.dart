@@ -1,5 +1,5 @@
-import '../../../domain/entities/profile/user_profile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../domain/entities/profile/user_profile.dart';
 
 class UserProfileModel extends UserProfile {
   const UserProfileModel({
@@ -17,8 +17,7 @@ class UserProfileModel extends UserProfile {
     super.updatedAt,
   });
 
-factory UserProfileModel.fromJson(Map<String, dynamic> json) {
-    DateTime? _toDate(dynamic value) {
+  static DateTime? _toDate(dynamic value) {
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
@@ -26,22 +25,24 @@ factory UserProfileModel.fromJson(Map<String, dynamic> json) {
     return null;
   }
 
-  return UserProfileModel(
-    userId: json['userId'] as String,
-    email: json['email'] as String,
-    displayName: json['displayName'] as String?,
-    photoUrl: json['photoUrl'] as String?,
-    phoneNumber: json['phoneNumber'] as String?,
-    bio: json['bio'] as String?,
-    address: json['address'] as String?,
-    city: json['city'] as String?,
-    state: json['state'] as String?,
-    zipCode: json['zipCode'] as String?,
-    createdAt: _toDate(json['createdAt']),
-    updatedAt: _toDate(json['updatedAt']),
-  );
-}
-
+  factory UserProfileModel.fromJson(Map<String, dynamic> json) {
+    return UserProfileModel(
+      userId: json['userId'] as String? ?? json['id'] as String,
+      email: (json['email'] as String?) ?? '',
+      displayName:
+          json['displayName'] as String? ?? json['name'] as String?,
+      photoUrl: json['photoUrl'] as String?,
+      phoneNumber:
+          json['phoneNumber'] as String? ?? json['phone'] as String?,
+      bio: json['bio'] as String?,
+      address: json['address'] as String?,
+      city: json['city'] as String?,
+      state: json['state'] as String?,
+      zipCode: json['zipCode'] as String?,
+      createdAt: _toDate(json['createdAt']),
+      updatedAt: _toDate(json['updatedAt']),
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -55,8 +56,8 @@ factory UserProfileModel.fromJson(Map<String, dynamic> json) {
       'city': city,
       'state': state,
       'zipCode': zipCode,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth/auth_providers.dart';
 
@@ -7,8 +10,7 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
-  ConsumerState<ForgotPasswordPage> createState() =>
-      _ForgotPasswordPageState();
+  ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
 class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
@@ -29,10 +31,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           email: _emailController.text.trim(),
         );
 
+    if (!mounted) return;
+
     if (success) {
-      setState(() {
-        _emailSent = true;
-      });
+      setState(() => _emailSent = true);
     }
   }
 
@@ -48,20 +50,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
-            child: _emailSent
-                ? _buildSuccessView(context)
-                : _buildFormView(context, authState),
+            child: _emailSent ? _buildSuccessView(context) : _buildFormView(context, authState),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormView(BuildContext context, authState) {
+  Widget _buildFormView(BuildContext context, dynamic authState) {
     return Form(
       key: _formKey,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Icon(
@@ -83,7 +82,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           ),
           const SizedBox(height: 32),
 
-          // Email field
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -96,7 +94,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           ),
           const SizedBox(height: 24),
 
-          // Error message
           if (authState.errorMessage != null)
             Container(
               padding: const EdgeInsets.all(12),
@@ -111,7 +108,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ),
             ),
 
-          // Reset button
           ElevatedButton(
             onPressed: authState.isLoading ? null : _handleResetPassword,
             style: ElevatedButton.styleFrom(
@@ -132,7 +128,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   Widget _buildSuccessView(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Icon(
@@ -154,7 +149,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         ),
         const SizedBox(height: 32),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.go(AppRoutes.login),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),

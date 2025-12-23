@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/auth/user.dart';
 import '../../providers/auth/auth_providers.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
-
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -20,6 +20,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _displayNameController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   UserRole _selectedRole = UserRole.user;
@@ -36,30 +37,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(authControllerProvider.notifier).signUpWithEmail(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          displayName: _displayNameController.text.trim(),
-          role: _selectedRole,
-        );
+    final success =
+        await ref.read(authControllerProvider.notifier).signUpWithEmail(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+              displayName: _displayNameController.text.trim(),
+              role: _selectedRole,
+            );
 
-    if (success && mounted) {
-      // Show verification email sent message
+    if (!mounted) return;
+
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Verification email sent! Please check your inbox.'),
-          backgroundColor: Colors.green,
+          content: Text('Account created successfully'),
         ),
       );
-      context.go(AppRoutes.home);
 
+      // ✅ ارجع للـ AuthGate
+      context.go(AppRoutes.authGate);
     }
   }
 
   void _navigateToLogin() {
-  context.go(AppRoutes.login);
-}
-
+    context.go(AppRoutes.login);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,65 +71,40 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo
-                  Icon(
-                    Icons.pets,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Create Account',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Join us to help pets find homes',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
+                  const Icon(Icons.pets, size: 80),
+                  const SizedBox(height: 24),
 
-                  // Display name field
                   TextFormField(
                     controller: _displayNameController,
                     decoration: const InputDecoration(
                       labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.person),
                       border: OutlineInputBorder(),
                     ),
                     validator: Validators.validateDisplayName,
                   ),
                   const SizedBox(height: 16),
 
-                  // Email field
                   TextFormField(
                     controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(),
                     ),
                     validator: Validators.validateEmail,
                   ),
                   const SizedBox(height: 16),
 
-                  // Password field
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -135,24 +112,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ? Icons.visibility
                               : Icons.visibility_off,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                        onPressed: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
                       ),
                     ),
                     validator: Validators.validatePassword,
                   ),
                   const SizedBox(height: 16),
 
-                  // Confirm password field
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
                     decoration: InputDecoration(
                       labelText: 'Confirm Password',
-                      prefixIcon: const Icon(Icons.lock),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -160,27 +132,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ? Icons.visibility
                               : Icons.visibility_off,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
+                        onPressed: () => setState(() =>
+                            _obscureConfirmPassword =
+                                !_obscureConfirmPassword),
                       ),
                     ),
                     validator: (value) =>
                         Validators.validateConfirmPassword(
-                          value,
-                          _passwordController.text,
-                        ),
+                      value,
+                      _passwordController.text,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Role selection
                   DropdownButtonFormField<UserRole>(
-                    initialValue: _selectedRole,
+                    value: _selectedRole,
                     decoration: const InputDecoration(
-                      labelText: 'I am a',
-                      prefixIcon: Icon(Icons.badge),
+                      labelText: 'Role',
                       border: OutlineInputBorder(),
                     ),
                     items: const [
@@ -190,60 +158,30 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       ),
                       DropdownMenuItem(
                         value: UserRole.shelter,
-                        child: Text('Shelter/Rescue'),
+                        child: Text('Shelter'),
                       ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
-                        setState(() {
-                          _selectedRole = value;
-                        });
+                        setState(() => _selectedRole = value);
                       }
                     },
                   ),
                   const SizedBox(height: 24),
 
-                  // Error message
-                  if (authState.errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        authState.errorMessage!,
-                        style: TextStyle(color: Colors.red.shade700),
-                      ),
-                    ),
-
-                  // Register button
                   ElevatedButton(
-                    onPressed: authState.isLoading ? null : _handleRegister,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
+                    onPressed:
+                        authState.isLoading ? null : _handleRegister,
                     child: authState.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                        ? const CircularProgressIndicator()
                         : const Text('Sign Up'),
                   ),
-                  const SizedBox(height: 24),
 
-                  // Login link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Already have an account? '),
-                      TextButton(
-                        onPressed: _navigateToLogin,
-                        child: const Text('Sign In'),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+
+                  TextButton(
+                    onPressed: _navigateToLogin,
+                    child: const Text('Already have an account? Sign In'),
                   ),
                 ],
               ),

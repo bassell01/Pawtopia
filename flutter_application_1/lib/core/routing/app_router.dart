@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../constants/app_routes.dart';
 import '../di/injection_container.dart';
+
 import 'route_guard.dart';
-//import '../../presentations/pages/home/ui_kit_page.dart';
-//import '../../presentations/pages/auth/splash_page.dart';
+import '../constants/app_routes.dart';
+import '../../presentations/pages/auth/auth_gate.dart';
 import '../../presentations/pages/auth/login_page.dart';
 import '../../presentations/pages/auth/register_page.dart';
 import '../../presentations/pages/home/home_page.dart';
@@ -13,14 +12,17 @@ import '../../presentations/pages/admin/admin_dashboard_page.dart';
 import '../../presentations/pages/pets/pet_list_page.dart';
 import '../../presentations/pages/pets/pet_detail_page.dart';
 import '../../presentations/pages/pets/pet_form_page.dart';
+// import '../../presentations/pages/adoption/adoption_form_page.dart';
+// import '../../presentations/pages/adoption/my_requests_page.dart';
+// import '../../presentations/pages/adoption/incoming_requests_page.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final guard = const RouteGuard();
 
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.authGate,
     routes: [
-      GoRoute(path: AppRoutes.home, builder: (_, _) => const HomePage()),
+      GoRoute(path: AppRoutes.authGate, builder: (_, _) => const AuthGate()),
       GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginPage()),
       GoRoute(
         path: AppRoutes.register,
@@ -41,6 +43,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       
-    ],
-  );
+      /// Main
+      GoRoute(path: AppRoutes.home, builder: (_, __) => const HomePage()),
+
+      /// Admin
+      GoRoute(
+        path: AppRoutes.adminDashboard,
+        builder: (_, __) => const AdminDashboardPage(),
+      ),
+      
+  ],
+);
+
 });

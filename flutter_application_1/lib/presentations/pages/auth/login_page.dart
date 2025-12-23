@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth/auth_providers.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
-
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -34,37 +34,42 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           password: _passwordController.text,
         );
 
-    if (success && mounted) {
-      if (success && mounted) {
-        context.go(AppRoutes.home);
+    if (!mounted) return;
+
+    // ✅ IMPORTANT:
+    // Do NOT navigate to home here.
+    // AuthGate will route user based on auth state + Firestore role.
+    if (success) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Signed in successfully')),
+  );
+
+  // ✅ ارجع للـ AuthGate عشان هو اللي يعمل redirect لـ Home/Admin
+  context.go(AppRoutes.authGate);
 }
 
-    }
   }
 
   Future<void> _handleGoogleSignIn() async {
-    final success =
-        await ref.read(authControllerProvider.notifier).signInWithGoogle();
+    final success = await ref.read(authControllerProvider.notifier).signInWithGoogle();
 
-    if (success && mounted) {
-      if (success && mounted) {
-        context.go(AppRoutes.home);
-}
+    if (!mounted) return;
 
+    // ✅ IMPORTANT: No navigation here.
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signed in successfully')),
+      );
     }
   }
 
   void _navigateToRegister() {
     context.go(AppRoutes.register);
-
   }
 
   void _navigateToForgotPassword() {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Forgot password not implemented yet')),
-  );
-}
-
+  context.go(AppRoutes.forgotPassword);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +86,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo or App Name
                   Icon(
                     Icons.pets,
                     size: 80,
@@ -101,7 +105,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Email field
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -114,7 +117,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Password field
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -124,14 +126,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
                         ),
                         onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
+                          setState(() => _obscurePassword = !_obscurePassword);
                         },
                       ),
                     ),
@@ -139,7 +137,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Forgot password
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -149,7 +146,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Error message
                   if (authState.errorMessage != null)
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -164,7 +160,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                     ),
 
-                  // Login button
                   ElevatedButton(
                     onPressed: authState.isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
@@ -180,7 +175,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Divider
                   Row(
                     children: [
                       const Expanded(child: Divider()),
@@ -196,7 +190,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Google sign in
                   OutlinedButton.icon(
                     onPressed: authState.isLoading ? null : _handleGoogleSignIn,
                     icon: const Icon(Icons.g_mobiledata, size: 32),
@@ -207,7 +200,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Register link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

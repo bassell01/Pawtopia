@@ -11,12 +11,24 @@ final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
   // Firebase SDK
-  sl.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
-  sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
-  sl.registerLazySingleton<FirebaseStorage>(() => FirebaseStorage.instance);
+  if (!sl.isRegistered<FirebaseAuth>()) {
+    sl.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
+  }
+  if (!sl.isRegistered<FirebaseFirestore>()) {
+    sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
+  }
+  if (!sl.isRegistered<FirebaseStorage>()) {
+    sl.registerLazySingleton<FirebaseStorage>(() => FirebaseStorage.instance);
+  }
 
   // Wrapper services
-  sl.registerLazySingleton<FirebaseAuthService>(() => FirebaseAuthService(sl()));
-  sl.registerLazySingleton<FirebaseFirestoreService>(() => FirebaseFirestoreService(sl()));
-  sl.registerLazySingleton<FirebaseStorageService>(() => FirebaseStorageService(sl()));
+  if (!sl.isRegistered<FirebaseAuthService>()) {
+    sl.registerLazySingleton<FirebaseAuthService>(() => FirebaseAuthService(sl<FirebaseAuth>()));
+  }
+  if (!sl.isRegistered<FirebaseFirestoreService>()) {
+    sl.registerLazySingleton<FirebaseFirestoreService>(() => FirebaseFirestoreService(sl<FirebaseFirestore>()));
+  }
+  if (!sl.isRegistered<FirebaseStorageService>()) {
+    sl.registerLazySingleton<FirebaseStorageService>(() => FirebaseStorageService(sl<FirebaseStorage>()));
+  }
 }

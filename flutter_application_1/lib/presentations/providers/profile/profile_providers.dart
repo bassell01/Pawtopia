@@ -7,7 +7,7 @@ import '../../../domain/repositories/profile_repository.dart';
 import '../../../domain/usecases/profile/get_user_profile.dart';
 import '../../../domain/usecases/profile/update_user_profile.dart';
 import '../../../domain/usecases/profile/upload_profile_image.dart';
-import '../auth/auth_providers.dart';
+import '../auth/user_role_provider.dart';
 import 'profile_controller.dart';
 
 // External dependencies

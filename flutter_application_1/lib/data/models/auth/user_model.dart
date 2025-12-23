@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../domain/entities/auth/user.dart';
 
 class UserModel extends User {
@@ -10,32 +11,41 @@ class UserModel extends User {
     super.lastLoginAt,
   });
 
+  static DateTime? _toDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
-      email: json['email'] as String,
+      id: (json['id'] ?? '') as String,
+      email: (json['email'] ?? '') as String,
       role: UserRole.values.firstWhere(
-        (e) => e.name == json['role'],
+        (e) => e.name == (json['role'] ?? 'user'),
         orElse: () => UserRole.user,
       ),
-      isEmailVerified: json['isEmailVerified'] as bool? ?? false,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      lastLoginAt: json['lastLoginAt'] != null
-          ? DateTime.parse(json['lastLoginAt'] as String)
-          : null,
+      isEmailVerified: (json['isEmailVerified'] as bool?) ?? false,
+      createdAt: _toDate(json['createdAt']),
+      lastLoginAt: _toDate(json['lastLoginAt']),
     );
   }
 
+  /// ✅ خلي Firestore يخزن Timestamp (أفضل) بدل String
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'email': email,
       'role': role.name,
       'isEmailVerified': isEmailVerified,
-      'createdAt': createdAt?.toIso8601String(),
-      'lastLoginAt': lastLoginAt?.toIso8601String(),
+      'createdAt': createdAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(createdAt!),
+      'lastLoginAt': lastLoginAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(lastLoginAt!),
     };
   }
 

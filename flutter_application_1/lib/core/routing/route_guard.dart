@@ -14,11 +14,11 @@ class RouteGuard {
   }) {
     // While loading (splash time), keep user on splash
     if (authLoading || (isLoggedIn && roleLoading)) {
-      return location == AppRoutes.splash ? null : AppRoutes.splash;
+      return location == AppRoutes.authGate ? null : AppRoutes.authGate;
     }
 
     final isAuthRoute = location == AppRoutes.login || location == AppRoutes.register;
-    final isSplash = location == AppRoutes.splash;
+    final isSplash = location == AppRoutes.authGate;
     final isAdminRoute = location.startsWith(AppRoutes.adminDashboard);
 
     // Not logged in -> allow only auth routes (and splash)
