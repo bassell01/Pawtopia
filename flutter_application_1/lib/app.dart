@@ -7,10 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
-import 'presentations/providers/auth/auth_state_provider.dart';
 
+import 'presentations/providers/auth/auth_state_provider.dart';
 import 'presentations/providers/auth/auth_providers.dart';
 import 'presentations/providers/notifications/notification_providers.dart';
+
+// ✅ NEW import for theme mode provider
+import 'presentations/providers/theme/theme_mode_provider.dart';
 
 class App extends ConsumerStatefulWidget {
   const App({super.key});
@@ -46,7 +49,9 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    
+    // ✅ Theme mode (System / Light / Dark)
+    final themeMode = ref.watch(themeModeProvider);
+
     ref.listen(authUserProvider, (prev, next) {
       next.whenData((firebaseUser) {
         // FirebaseAuth is already logged in (even after hot restart)
@@ -55,7 +60,6 @@ class _AppState extends ConsumerState<App> {
       });
     });
 
-    
     final router = ref.watch(goRouterProvider);
 
     // When user logs in/out, save token once
@@ -76,9 +80,8 @@ class _AppState extends ConsumerState<App> {
       await ref.read(saveDeviceTokenUseCaseProvider).call(uid: uid, token: token);
       _lastSavedTokenForUid = uid;
     });
-    
 
-// Re-sync domain auth after hot restart / app reopen
+    // Re-sync domain auth after hot restart / app reopen
     ref.listen(authUserProvider, (prev, next) {
       next.whenData((firebaseUser) {
         ref.read(authControllerProvider.notifier).checkAuthState();
@@ -104,13 +107,15 @@ class _AppState extends ConsumerState<App> {
       _lastSavedTokenForUid = uid;
     });
 
-
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Pet Adoption & Rescue',
+      themeMode: themeMode,
       theme: AppTheme.light,
+      // ✅ NEW: dark theme
+      darkTheme: AppTheme.dark,
+      // ✅ NEW: controls which theme is active
       routerConfig: router,
     );
   }
-  
 }
