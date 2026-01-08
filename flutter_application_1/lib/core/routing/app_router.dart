@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 
 // Pages
+import '../../presentations/pages/notifications/notifications_center_page.dart';
 import '../../presentations/pages/auth/auth_gate.dart';
 import '../../presentations/pages/auth/login_page.dart';
 import '../../presentations/pages/auth/register_page.dart';
@@ -42,6 +43,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         builder: (_, __) => const HomePage(),
       ),
+      
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (_, __) => const NotificationsCenterPage(),
+      ),
+
 
       // Pets
       GoRoute(

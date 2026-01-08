@@ -13,6 +13,8 @@ class AppRoutes {
   static const chat = '/chat';
   static const profile = '/profile';
   static const uiKit = '/ui-kit';
+  static const notifications = '/notifications';
+
 
   // Adoption
   static const adoptionForm = '/adoption-form';

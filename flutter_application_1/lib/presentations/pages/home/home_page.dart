@@ -6,6 +6,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../providers/profile/profile_providers.dart';
 import '../../providers/chat/profile_search_providers.dart';
 import '../../providers/auth/auth_providers.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/chat/chat_threads_controller.dart';
 import '../../providers/chat/chat_messages_controller.dart';
@@ -139,6 +140,16 @@ class _ProfileTab extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text('Bio: ${profile.bio}'),
               ],
+              const Divider(height: 40),
+
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Notifications'),
+                  subtitle: const Text('View all updates and alerts'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push(AppRoutes.notifications),
+                ),
 
               const SizedBox(height: 32),
 

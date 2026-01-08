@@ -144,10 +144,29 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
   }
 
   @override
-  Future<String> addPet(PetModel pet) async {
-    final ref = await _pets.add(pet.toFirestore());
-    return ref.id;
+Future<String> addPet(PetModel pet) async {
+  // Create pet doc
+  final ref = await _pets.add(pet.toFirestore());
+  final petId = ref.id;
+
+  // ✅ Create in-app notification for the owner (shows in NotificationsCenterPage)
+  final ownerId = pet.ownerId;
+  if (ownerId.isNotEmpty) {
+    await _firestoreService.col('profiles/$ownerId/notifications').add({
+      'title': 'Pet added',
+      'body': '${pet.name} is now listed for adoption.',
+      'type': 'pet',
+      'deepLink': '/pets/$petId',
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+      'data': {
+        'petId': petId,
+      },
+    });
   }
+
+  return petId;
+}
 
   @override
   Future<void> updatePet(PetModel pet) async {
