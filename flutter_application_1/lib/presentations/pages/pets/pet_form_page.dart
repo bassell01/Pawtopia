@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../domain/entities/pets/pet.dart';
 import '../../providers/pets/pet_providers.dart';
+
+/// ✅ Result types live in the SAME file (no new folders/files)
+sealed class PetFormResult {
+  const PetFormResult();
+}
+
+class PetCreatedResult extends PetFormResult {
+  const PetCreatedResult({required this.createdPetId, required this.pet});
+  final String createdPetId;
+  final Pet pet;
+}
+
+class PetUpdatedResult extends PetFormResult {
+  const PetUpdatedResult({required this.before, required this.after});
+  final Pet before;
+  final Pet after;
+}
 
 class PetFormPage extends ConsumerStatefulWidget {
   const PetFormPage({super.key, this.existing});
@@ -36,11 +54,11 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
     _name = TextEditingController(text: p?.name ?? '');
     _type = TextEditingController(text: p?.type ?? '');
     _breed = TextEditingController(text: p?.breed ?? '');
-    _ageInMonths =
-        TextEditingController(text: p?.ageInMonths?.toString() ?? '');
+    _ageInMonths = TextEditingController(text: p?.ageInMonths?.toString() ?? '');
     _description = TextEditingController(text: p?.description ?? '');
     _location = TextEditingController(text: p?.location ?? '');
-    _photoUrls = TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
+    _photoUrls =
+        TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
 
     _gender = p?.gender;
     _size = p?.size;
@@ -82,7 +100,21 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
 
     final typeLower = _type.text.trim().toLowerCase();
 
-  
+    /// ✅ NEW: get current ownerId from FirebaseAuth
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid == null || currentUid.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to save a pet.')),
+      );
+      return;
+    }
+
+    /// ✅ Rule:
+    /// - If editing: keep existing.ownerId (don’t transfer ownership)
+    /// - If creating: ownerId = current user uid
+    final ownerId = existing?.ownerId ?? currentUid;
+
     final pet = Pet(
       id: existing?.id ?? '',
       name: _name.text.trim(),
@@ -96,23 +128,30 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
       location: _location.text.trim().isEmpty ? null : _location.text.trim(),
       photoUrls: _parsePhotoUrls(_photoUrls.text),
       isAdopted: _isAdopted,
-       ownerId: widget.existing?.ownerId ?? 'TODO_OWNER_ID',
+      ownerId: ownerId,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
 
     try {
-      final addPet = ref.read(addPetUseCaseProvider);
+      final addPet = ref.read(addPetUseCaseProvider); // Future<String> Function(Pet)
       final updatePet = ref.read(updatePetUseCaseProvider);
 
       if (existing == null) {
-        await addPet(pet);
+        final createdId = await addPet(pet);
+
+        if (!context.mounted) return;
+        Navigator.of(context).pop(
+          PetCreatedResult(createdPetId: createdId, pet: pet),
+        );
       } else {
         await updatePet(pet);
-      }
 
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
+        if (!context.mounted) return;
+        Navigator.of(context).pop(
+          PetUpdatedResult(before: existing, after: pet),
+        );
+      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,22 +181,18 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _type,
-                decoration:
-                    const InputDecoration(labelText: 'Type (dog/cat) *'),
+                decoration: const InputDecoration(labelText: 'Type (dog/cat) *'),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _breed,
                 decoration: const InputDecoration(labelText: 'Breed (optional)'),
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _ageInMonths,
                 keyboardType: TextInputType.number,
@@ -174,11 +209,9 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 },
               ),
               const SizedBox(height: 12),
-
               DropdownButtonFormField<String>(
-                initialValue: (_gender == null || _gender!.isEmpty)
-                    ? null
-                    : _gender,
+                initialValue:
+                    (_gender == null || _gender!.isEmpty) ? null : _gender,
                 decoration: const InputDecoration(labelText: 'Gender (optional)'),
                 items: const [
                   DropdownMenuItem(value: 'male', child: Text('Male')),
@@ -187,10 +220,8 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 onChanged: (v) => setState(() => _gender = v),
               ),
               const SizedBox(height: 12),
-
               DropdownButtonFormField<String>(
-                initialValue:
-                    (_size == null || _size!.isEmpty) ? null : _size,
+                initialValue: (_size == null || _size!.isEmpty) ? null : _size,
                 decoration: const InputDecoration(labelText: 'Size (optional)'),
                 items: const [
                   DropdownMenuItem(value: 'small', child: Text('Small')),
@@ -200,22 +231,17 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 onChanged: (v) => setState(() => _size = v),
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _location,
-                decoration:
-                    const InputDecoration(labelText: 'Location (optional)'),
+                decoration: const InputDecoration(labelText: 'Location (optional)'),
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _description,
-                decoration:
-                    const InputDecoration(labelText: 'Description (optional)'),
+                decoration: const InputDecoration(labelText: 'Description (optional)'),
                 maxLines: 4,
               ),
               const SizedBox(height: 12),
-
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _isAdopted,
@@ -223,7 +249,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 title: const Text('Mark as adopted'),
               ),
               const SizedBox(height: 12),
-
               TextFormField(
                 controller: _photoUrls,
                 decoration: const InputDecoration(
@@ -232,11 +257,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 ),
                 maxLines: 4,
               ),
-              const SizedBox(height: 12),
-
-             
               const SizedBox(height: 20),
-
               ElevatedButton(
                 onPressed: _submit,
                 child: Text(isEdit ? 'Save' : 'Create'),
