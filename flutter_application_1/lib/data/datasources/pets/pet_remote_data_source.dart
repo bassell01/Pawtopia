@@ -149,7 +149,7 @@ Future<String> addPet(PetModel pet) async {
   final ref = await _pets.add(pet.toFirestore());
   final petId = ref.id;
 
-  // ✅ Create in-app notification for the owner (shows in NotificationsCenterPage)
+  //Create in-app notification for the owner (shows in NotificationsCenterPage)
   final ownerId = pet.ownerId;
   if (ownerId.isNotEmpty) {
     await _firestoreService.col('profiles/$ownerId/notifications').add({

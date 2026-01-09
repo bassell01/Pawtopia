@@ -88,13 +88,10 @@ class ChatRemoteDataSource {
       'title': 'New Message has been sent by '+ senderName,
       'body': text,
       'type': 'chat',
-      'deepLink': '/chat', // or make it open the thread directly (next note)
+      'deepLink': '/chat/thread/$threadId',
+      'data': {'threadId': threadId, 'senderId': senderId},
       'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
-      'data': {
-        'threadId': threadId,
-        'senderId': senderId,
-      },
+      'createdAt': FieldValue.serverTimestamp(),    
     });
   }
 }

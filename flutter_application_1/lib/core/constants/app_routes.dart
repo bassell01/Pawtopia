@@ -10,11 +10,15 @@ class AppRoutes {
   static const home = '/home';
   static const pets = '/pets';
   static const favorites = '/favorites';
-  static const chat = '/chat';
+
   static const profile = '/profile';
   static const uiKit = '/ui-kit';
   static const notifications = '/notifications';
 
+  // Chat
+  static const chat = '/chat';
+  static const chatThread = '/chat/thread/:id';
+  static String chatThreadPath(String id) => '/chat/thread/$id';
 
   // Adoption
   static const adoptionForm = '/adoption-form';

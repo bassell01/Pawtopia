@@ -56,6 +56,44 @@ class FavoritesRemoteDataSourceImpl implements FavoritesRemoteDataSource {
     );
 
     await _favoritesCollection.add(model.toFirestore());
+
+     // Fetch pet to get owner + name  //notifications part
+    final petSnap = await _firestoreService.col('pets').doc(petId).get();
+    final petData = petSnap.data();
+    if (petData == null) return;
+
+    final ownerId = (petData['ownerId'] as String?) ?? '';
+    if (ownerId.isEmpty) return;
+
+  
+  // Don't notify if user favorited their own pet
+    if (ownerId == userId) return;
+
+    final petName = (petData['name'] as String?) ?? 'your pet';
+
+    // Fetch favoriter profile name
+    final senderSnap = await _firestoreService.col('profiles').doc(userId).get();
+    final senderData = senderSnap.data();
+    final senderName =
+      (senderData?['displayName'] as String?) ??
+      (senderData?['fullName'] as String?) ??
+      (senderData?['email'] as String?) ??
+      'Someone';
+
+    // Create notification for the owner
+  await _firestoreService.col('profiles/$ownerId/notifications').add({
+    'title': 'Pet favorited',
+    'body': '$senderName favorited $petName ❤️',
+    'type': 'favorite',
+    'deepLink': '/pets/$petId',
+    'isRead': false,
+    'createdAt': FieldValue.serverTimestamp(),
+    'data': {
+      'petId': petId,
+      'fromUserId': userId,
+      'fromUserName': senderName,
+    },
+  });
   }
 
   @override
