@@ -34,45 +34,63 @@ class _PetListPageState extends ConsumerState<PetListPage> {
     final updatePet = ref.read(updatePetUseCaseProvider);
 
     if (res is PetCreatedResult) {
-      messenger.showSnackBar(
+      final controller = messenger.showSnackBar(
         SnackBar(
           content: const Text('Pet added'),
           action: SnackBarAction(
             label: 'UNDO',
             onPressed: () async {
               try {
-                // ✅ Works because AddPet returns the created doc id
                 await deletePet(res.createdPetId);
               } catch (e) {
                 if (!mounted) return;
+                messenger.hideCurrentSnackBar();
                 messenger.showSnackBar(
-                  SnackBar(content: Text('Undo failed: $e')),
+                  const SnackBar(
+                    content: Text('Undo failed'),
+                    duration: Duration(seconds: 2),
+                  ),
                 );
               }
             },
           ),
         ),
       );
+
+      // ✅ Force dismiss after 2 seconds even if UNDO exists
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        controller.close();
+      });
     } else if (res is PetUpdatedResult) {
-      messenger.showSnackBar(
+      final controller = messenger.showSnackBar(
         SnackBar(
           content: const Text('Pet updated'),
           action: SnackBarAction(
             label: 'UNDO',
             onPressed: () async {
               try {
-                // ✅ Restore previous state
                 await updatePet(res.before);
               } catch (e) {
                 if (!mounted) return;
+                messenger.hideCurrentSnackBar();
                 messenger.showSnackBar(
-                  SnackBar(content: Text('Undo failed: $e')),
+                  const SnackBar(
+                    content: Text('Undo failed'),
+                    duration: Duration(seconds: 2),
+                  ),
                 );
               }
             },
           ),
         ),
       );
+
+      // ✅ Force dismiss after 2 seconds even if UNDO exists
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        controller.close();
+      });
     }
   }
 
@@ -99,12 +117,10 @@ class _PetListPageState extends ConsumerState<PetListPage> {
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddPet,
         child: const Icon(Icons.add),
       ),
-
       body: Column(
         children: [
           _PetFilterBar(
@@ -132,7 +148,7 @@ class _PetListPageState extends ConsumerState<PetListPage> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(AppSizes.screenPadding),
                     itemCount: uiPets.length,
-                    separatorBuilder: (_, _) =>
+                    separatorBuilder: (_, __) =>
                         const SizedBox(height: AppSizes.listItemSpacing),
                     itemBuilder: (context, i) => PetCard(
                       id: uiPets[i].id,
@@ -142,7 +158,6 @@ class _PetListPageState extends ConsumerState<PetListPage> {
                       imageUrl: uiPets[i].thumbnailUrl,
                       isAdopted: uiPets[i].isAdopted,
                       onTap: () async {
-                        // If your details page forwards PetFormResult back, this will also work:
                         final res = await context.push<PetFormResult>(
                           AppRoutes.petDetails.replaceFirst(':id', uiPets[i].id),
                         );

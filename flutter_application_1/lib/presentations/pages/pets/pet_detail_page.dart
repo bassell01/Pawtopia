@@ -19,7 +19,45 @@ class PetDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final petAsync = ref.watch(petDetailControllerProvider(petId));
-    final authAsync = ref.watch(authUserProvider);
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+    Future<void> confirmAndDelete({
+      required String petId,
+      required String petName,
+    }) async {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Delete pet'),
+          content: Text('Are you sure you want to delete "$petName"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      try {
+        final deletePet = ref.read(deletePetUseCaseProvider);
+        await deletePet(petId);
+
+        if (!context.mounted) return;
+        Navigator.of(context).pop(); // go back to list
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete pet: $e')),
+        );
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -27,21 +65,33 @@ class PetDetailPage extends ConsumerWidget {
         actions: [
           petAsync.maybeWhen(
             data: (pet) {
-              // ✅ current logged-in user id
-              final currentUid = FirebaseAuth.instance.currentUser?.uid;
+              final isOwner = (currentUid != null && pet.ownerId == currentUid);
 
-              // ✅ Hide Edit if user is not the owner
-              final canEdit = (currentUid != null && currentUid == pet.ownerId);
-              if (!canEdit) return const SizedBox.shrink();
+              // ✅ Only owner can see Edit + Delete
+              if (!isOwner) return const SizedBox.shrink();
 
-              return IconButton(
-                tooltip: 'Edit pet',
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => PetFormPage(existing: pet)),
-                  );
-                },
+              return Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Edit pet',
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PetFormPage(existing: pet),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Delete pet',
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => confirmAndDelete(
+                      petId: pet.id,
+                      petName: pet.name,
+                    ),
+                  ),
+                ],
               );
             },
             orElse: () => const SizedBox.shrink(),
@@ -56,23 +106,9 @@ class PetDetailPage extends ConsumerWidget {
           // ✅ Hide Adopt if already adopted
           if (pet.isAdopted == true) return const SizedBox.shrink();
 
-          // ✅ wait auth to know who is user
-          final me = authAsync.valueOrNull;
-          if (me == null) return const SizedBox.shrink(); // not logged in
-
-          // ✅ hide adopt button if user is owner
-          if (me.uid == pet.ownerId) return const SizedBox.shrink();
-
-          final firstPhoto = pet.photoUrls.isNotEmpty ? pet.photoUrls.first : null;
-
-          // ✅ current logged-in user id
-          final currentUid = FirebaseAuth.instance.currentUser?.uid;
-
-          // ✅ Hide Adopt if current user IS the owner
-          final isOwner = (currentUid != null && currentUid == pet.ownerId);
-          if (isOwner) {
-            return const SizedBox.shrink();
-          }
+          // ✅ Hide Adopt if current user is owner
+          final isOwner = (currentUid != null && pet.ownerId == currentUid);
+          if (isOwner) return const SizedBox.shrink();
 
           return SizedBox(
             width: MediaQuery.of(context).size.width * 0.75,

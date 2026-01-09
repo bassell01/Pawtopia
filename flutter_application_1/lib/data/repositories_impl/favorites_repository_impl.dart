@@ -33,12 +33,31 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   Future<List<Pet>> getFavoritePets(String userId) async {
     final favorites = await _favoritesRemoteDataSource.getFavorites(userId);
 
-    // Simple implementation – multiple reads; you can optimize later.
+    // ✅ Robust implementation:
+    // - If a pet was deleted / missing, DON'T crash favorites screen.
+    // - Skip the missing pet.
+    // - Optional: remove broken favorite reference to prevent repeated failures.
     final pets = <Pet>[];
+
     for (final fav in favorites) {
-      final petModel = await _petRemoteDataSource.getPetDetails(fav.petId);
-      pets.add(petModel.toEntity());
+      try {
+        // If pet exists, convert and add
+        final petModel = await _petRemoteDataSource.getPetDetails(fav.petId);
+        pets.add(petModel.toEntity());
+      } catch (_) {
+        // Pet not found (or other fetch error) -> skip it
+        // ✅ Optional cleanup: remove the stale favorite record
+        try {
+          await _favoritesRemoteDataSource.removeFromFavorites(
+            userId: userId,
+            petId: fav.petId,
+          );
+        } catch (_) {
+          // ignore cleanup failure
+        }
+      }
     }
+
     return pets;
   }
 
