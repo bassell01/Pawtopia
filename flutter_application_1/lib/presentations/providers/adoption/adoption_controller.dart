@@ -24,12 +24,18 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
   AdoptionController(this.ref) : super(const AdoptionControllerState());
   final Ref ref;
 
-  Future<String?> createRequest({
+    Future<String?> createRequest({
     required String petId,
     required String ownerId,
     required String requesterId,
     String? message,
     String? threadId,
+
+    // ✅ NEW: pet summary
+    required String petName,
+    required String petType,
+    String? petLocation,
+    String? petPhotoUrl, String? requesterName,
   }) async {
     state = const AdoptionControllerState(isLoading: true, error: null);
 
@@ -39,11 +45,18 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
         petId: petId,
         ownerId: ownerId,
         requesterId: requesterId,
+        requesterName: requesterName, // ✅ ADD THIS
         message: message,
         status: AdoptionStatus.pending,
         createdAt: null,
         updatedAt: null,
         threadId: threadId,
+
+        // ✅ NEW
+        petName: petName,
+        petType: petType,
+        petLocation: petLocation,
+        petPhotoUrl: petPhotoUrl,
       );
 
       final usecase = ref.read(createAdoptionRequestProvider);

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 // Core services
+
 import '../services/firebase_auth_service.dart';
 import '../services/firebase_firestore_service.dart';
 import '../services/firebase_storage_service.dart';
@@ -20,6 +21,19 @@ import '../../domain/usecases/adoption/watch_my_adoption_requests.dart';
 import '../../domain/usecases/adoption/watch_incoming_adoption_requests.dart';
 import '../../domain/usecases/adoption/update_adoption_status.dart';
 
+// ================== Adoption imports ==================
+
+// Data
+import '../../data/datasources/adoption/adoption_remote_data_source.dart';
+import '../../data/repositories_impl/adoption_repository_impl.dart';
+// Domain
+import '../../domain/repositories/adoption_repository.dart';
+import '../../domain/usecases/adoption/create_adoption_request.dart';
+import '../../domain/usecases/adoption/watch_my_adoption_requests.dart';
+import '../../domain/usecases/adoption/watch_incoming_adoption_requests.dart';
+import '../../domain/usecases/adoption/update_adoption_status.dart';
+import '../../domain/usecases/adoption/watch_my_accepted_adoption_requests.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -33,6 +47,12 @@ Future<void> initDependencies() async {
   if (!sl.isRegistered<FirebaseStorage>()) {
     sl.registerLazySingleton<FirebaseStorage>(() => FirebaseStorage.instance);
   }
+    if (!sl.isRegistered<WatchMyAcceptedAdoptionRequests>()) {
+    sl.registerLazySingleton<WatchMyAcceptedAdoptionRequests>(
+      () => WatchMyAcceptedAdoptionRequests(sl<AdoptionRepository>()),
+    );
+  }
+
 
   // ================== Wrapper services ==================
   if (!sl.isRegistered<FirebaseAuthService>()) {
@@ -41,6 +61,9 @@ Future<void> initDependencies() async {
     );
   }
   if (!sl.isRegistered<FirebaseFirestoreService>()) {
+    sl.registerLazySingleton<FirebaseFirestoreService>(
+      () => FirebaseFirestoreService(sl<FirebaseFirestore>()),
+    );
     sl.registerLazySingleton<FirebaseFirestoreService>(
       () => FirebaseFirestoreService(sl<FirebaseFirestore>()),
     );

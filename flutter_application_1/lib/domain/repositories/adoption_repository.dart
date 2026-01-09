@@ -3,14 +3,30 @@ import '../../core/error/failures.dart';
 import '../entities/adoption/adoption_request.dart';
 
 abstract class AdoptionRepository {
-  Future<Either<Failure, String>> createRequest(AdoptionRequest request);
+  /// Create new adoption request
+  Future<Either<Failure, String>> createRequest(
+    AdoptionRequest request,
+  );
 
-  Stream<List<AdoptionRequest>> watchMyRequests(String requesterId);
-  Stream<List<AdoptionRequest>> watchIncomingRequests(String ownerId);
+  /// My pending adoption requests (as requester)
+  Stream<List<AdoptionRequest>> watchMyRequests(
+    String requesterId,
+  );
 
+  /// My accepted adoption requests (history)
+  Stream<List<AdoptionRequest>> watchMyAcceptedRequests(
+    String requesterId,
+  );
+
+  /// Incoming requests for pets I own
+  Stream<List<AdoptionRequest>> watchIncomingRequests(
+    String ownerId,
+  );
+
+  /// Update request status (accept / reject / cancel)
   Future<Either<Failure, void>> updateStatus({
     required String requestId,
     required AdoptionStatus status,
-    String? threadId, 
+    String? threadId,
   });
 }

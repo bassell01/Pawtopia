@@ -35,6 +35,7 @@ final petRepositoryProvider = Provider<PetRepository>((ref) {
   );
 });
 
+
 final getPetsUseCaseProvider =
     Provider((ref) => GetPets(ref.watch(petRepositoryProvider)));
 
@@ -58,6 +59,19 @@ final deletePetUseCaseProvider =
 
 final markAdoptedUseCaseProvider =
     Provider((ref) => MarkAdopted(ref.watch(petRepositoryProvider)));
+
+
+final petByIdProvider =
+    StateNotifierProvider.family<PetDetailController, AsyncValue<Pet>, String>(
+  (ref, petId) {
+    final getPetDetails = ref.read(getPetDetailsUseCaseProvider);
+    final ctrl = PetDetailController(getPetDetails: getPetDetails);
+    ctrl.load(petId);
+    return ctrl;
+  },
+);
+
+
 
 @immutable
 class PetsStreamFilter {

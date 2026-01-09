@@ -7,6 +7,7 @@ import '../../domain/repositories/adoption_repository.dart';
 import '../datasources/adoption/adoption_remote_data_source.dart';
 import '../models/adoption/adoption_request_model.dart';
 
+
 class AdoptionRepositoryImpl implements AdoptionRepository {
   final AdoptionRemoteDataSource remote;
 
@@ -15,18 +16,7 @@ class AdoptionRepositoryImpl implements AdoptionRepository {
   @override
   Future<Either<Failure, String>> createRequest(AdoptionRequest request) async {
     try {
-      final model = AdoptionRequestModel(
-        id: '', 
-        petId: request.petId,
-        ownerId: request.ownerId,
-        requesterId: request.requesterId,
-        message: request.message,
-        status: request.status,
-        createdAt: request.createdAt,
-        updatedAt: request.updatedAt,
-        threadId: request.threadId,
-      );
-
+      final model = AdoptionRequestModel.fromEntity(request);
       final id = await remote.createRequest(model);
       return Right(id);
     } on ServerException catch (e) {
@@ -45,6 +35,11 @@ class AdoptionRepositoryImpl implements AdoptionRepository {
   }
 
   @override
+  Stream<List<AdoptionRequest>> watchMyAcceptedRequests(String requesterId) {
+    return remote.watchMyAcceptedRequests(requesterId);
+  }
+
+  @override
   Future<Either<Failure, void>> updateStatus({
     required String requestId,
     required AdoptionStatus status,
@@ -60,5 +55,11 @@ class AdoptionRepositoryImpl implements AdoptionRepository {
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
+  }
+  
+  @override
+  Future<List<AdoptionRequest>> getUserRequests(String adopterId) {
+    // TODO: implement getUserRequests
+    throw UnimplementedError();
   }
 }

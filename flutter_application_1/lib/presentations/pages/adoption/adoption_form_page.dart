@@ -9,11 +9,18 @@ class AdoptionFormPage extends ConsumerStatefulWidget {
     super.key,
     required this.petId,
     required this.ownerId,
+    required this.petName,
+    required this.petType,
+    this.petLocation,
+    this.petPhotoUrl,
   });
-  
 
   final String petId;
   final String ownerId;
+  final String petName;
+  final String petType;
+  final String? petLocation;
+  final String? petPhotoUrl;
 
   @override
   ConsumerState<AdoptionFormPage> createState() => _AdoptionFormPageState();
@@ -29,34 +36,76 @@ class _AdoptionFormPageState extends ConsumerState<AdoptionFormPage> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    // ✅ safer: handle loading/null explicitly
-    final authState = ref.read(authUserProvider);
-    final me = authState.value;
+  String? _buildRequesterName(dynamic me) {
+    // me is your Firebase user object (from authUserProvider)
+    final displayName = (me.displayName as String?)?.trim();
+    if (displayName != null && displayName.isNotEmpty) return displayName;
 
+    final email = (me.email as String?)?.trim();
+    if (email != null && email.contains('@')) {
+      final prefix = email.split('@').first.trim();
+      if (prefix.isNotEmpty) return prefix;
+    }
+
+    // last fallback: null (UI can show Unknown)
+    return null;
+  }
+
+  Future<void> _submit() async {
+    final authState = ref.read(authUserProvider);
+
+    // If still loading user
     if (authState.isLoading) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Loading user...')),
       );
       return;
     }
 
+    final me = authState.value;
+
+    // Not logged in
     if (me == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login first.')),
       );
       return;
     }
 
+    // Can't adopt your own pet
+    if (me.uid == widget.ownerId) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You cannot request adoption for your own pet.'),
+        ),
+      );
+      return;
+    }
+
+    // Validate form
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final controller = ref.read(adoptionControllerProvider.notifier);
 
+    final message = _msgController.text.trim();
+    final requesterName = _buildRequesterName(me);
+
     final id = await controller.createRequest(
       petId: widget.petId,
-      ownerId: widget.ownerId, // ✅ must match pets.ownerId
+      ownerId: widget.ownerId,
       requesterId: me.uid,
-      message: _msgController.text.trim().isEmpty ? null : _msgController.text.trim(),
+
+      // ✅ THIS is what makes Incoming show the real name
+      requesterName: requesterName,
+
+      message: message.isEmpty ? null : message,
+      petName: widget.petName,
+      petType: widget.petType,
+      petLocation: widget.petLocation,
+      petPhotoUrl: widget.petPhotoUrl,
     );
 
     if (!mounted) return;
@@ -65,13 +114,11 @@ class _AdoptionFormPageState extends ConsumerState<AdoptionFormPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Adoption request sent ✅')),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } else {
-      // ✅ don’t assume state has .error if you used AsyncValue
       final state = ref.read(adoptionControllerProvider);
-      final err = state.error ?? 'Failed to send request';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err)),
+        SnackBar(content: Text(state.error ?? 'Failed to send request')),
       );
     }
   }
@@ -88,13 +135,23 @@ class _AdoptionFormPageState extends ConsumerState<AdoptionFormPage> {
           key: _formKey,
           child: Column(
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Pet: ${widget.petName} (${widget.petType})',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _msgController,
                 decoration: const InputDecoration(
                   labelText: 'Message (optional)',
+                  hintText: 'Tell the owner why you want to adopt...',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 4,
+                maxLength: 500,
                 validator: (v) {
                   if (v != null && v.length > 500) return 'Max 500 characters';
                   return null;

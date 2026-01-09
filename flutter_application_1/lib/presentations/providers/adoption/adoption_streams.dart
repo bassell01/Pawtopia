@@ -11,3 +11,8 @@ final incomingAdoptionRequestsStreamProvider =
     StreamProvider.autoDispose.family<List<AdoptionRequest>, String>((ref, ownerId) {
   return ref.read(watchIncomingRequestsProvider).call(ownerId);
 });
+
+final myAcceptedAdoptionRequestsStreamProvider =
+    StreamProvider.autoDispose.family<List<AdoptionRequest>, String>((ref, requesterId) {
+  return ref.read(watchMyAcceptedRequestsProvider).call(requesterId);
+});
