@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../domain/entities/adoption/adoption_request.dart';
 
@@ -24,18 +25,49 @@ class AdoptionRequestCard extends StatelessWidget {
     this.onReject,
   });
 
+  /// Title widget that guarantees showing pet name (from request OR pets doc)
+  Widget _petTitleWidget() {
+    final fromRequest = r.petName?.trim();
+    if (fromRequest != null && fromRequest.isNotEmpty) {
+      return Text(
+        fromRequest,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+      );
+    }
+
+    // Fallback: read from pets/{petId}
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('pets')
+          .doc(r.petId)
+          .snapshots(),
+      builder: (context, snap) {
+        String title = 'Pet';
+
+        final data = snap.data?.data();
+        if (data != null) {
+          final name = (data['name'] ?? data['petName'] ?? '').toString().trim();
+          if (name.isNotEmpty) title = name;
+        }
+
+        return Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final petTitle =
-        r.petName?.trim().isNotEmpty == true ? r.petName!.trim() : 'Pet';
-
     final petMeta = [
       if (r.petType?.trim().isNotEmpty == true) r.petType!.trim(),
       if (r.petLocation?.trim().isNotEmpty == true) r.petLocation!.trim(),
     ].join(' • ');
 
-    final requesterName =
-        r.requesterName?.trim().isNotEmpty == true ? r.requesterName!.trim() : null;
+    final requesterName = r.requesterName?.trim().isNotEmpty == true
+        ? r.requesterName!.trim()
+        : null;
 
     final msg = r.message?.trim();
 
@@ -57,15 +89,7 @@ class AdoptionRequestCard extends StatelessWidget {
                   // -------- Title + Status
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          petTitle,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
+                      Expanded(child: _petTitleWidget()),
                       _StatusChip(status: r.status),
                     ],
                   ),
