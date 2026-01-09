@@ -88,9 +88,19 @@ final currentUserRoleProvider = Provider<domain.UserRole?>((ref) {
   return ref.watch(authControllerProvider).user?.role;
 });
 
-final currentUserIdProvider = Provider<String?>((ref) {
-  return ref.watch(authControllerProvider).user?.id;
+final firebaseUserProvider = StreamProvider<firebase_auth.User?>((ref) {
+  final auth = ref.watch(firebaseAuthProvider) as firebase_auth.FirebaseAuth;
+  return auth.authStateChanges();
 });
+
+final currentUserIdProvider = Provider<String?>((ref) {
+  final authAsync = ref.watch(firebaseUserProvider);
+  return authAsync.maybeWhen(
+    data: (u) => u?.uid,
+    orElse: () => null,
+  );
+});
+
 
 final isAuthenticatedProvider = Provider<bool>((ref) {
   return ref.watch(authControllerProvider).isAuthenticated;

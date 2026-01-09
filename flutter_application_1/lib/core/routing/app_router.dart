@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 import '../routing/route_guard.dart'; // ✅ عدّل المسار حسب مكان RouteGuard عندك
 
+import '../../presentations/pages/chat/chat_thread_page.dart';
 import '../../presentations/pages/notifications/notifications_center_page.dart';
 import '../../presentations/pages/auth/auth_gate.dart';
 import '../../presentations/pages/auth/login_page.dart';
@@ -53,6 +54,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.authGate,
         builder: (_, __) => const AuthGate(),
       ),
+      // Chat from notifications
+      GoRoute(
+        path: AppRoutes.chat,
+        builder: (_, __) => const HomePage(initialTab: 3),
+    ),
+    GoRoute(
+      path: AppRoutes.chatThread,
+      builder: (context, state) {
+        final threadId = state.pathParameters['id']!;
+        return ChatThreadPage(threadId: threadId);
+      },
+    ),
 
       /// Auth
       GoRoute(
