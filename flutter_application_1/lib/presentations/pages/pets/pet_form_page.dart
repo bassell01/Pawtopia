@@ -133,7 +133,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
       location: _location.text.trim().isEmpty ? null : _location.text.trim(),
       photoUrls: _parsePhotoUrls(_photoUrls.text),
       isAdopted: _isAdopted,
-       ownerId: widget.existing?.ownerId ?? 'TODO_OWNER_ID',
+      ownerId: widget.existing?.ownerId ?? user.uid,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
@@ -158,8 +158,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
         );
       }
 
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
+
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -4,22 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
-import '../notifications/notifications_center_page.dart';
-
 import '../../../core/constants/app_routes.dart';
 import '../../providers/profile/profile_providers.dart';
 import '../../providers/auth/auth_providers.dart';
 
-import '../chat/new_chat_page.dart';
+import '../notifications/notifications_center_page.dart';
 import '../chat/chat_list_page.dart';
 import '../favorites/favorites_page.dart';
 import '../pets/pet_list_page.dart';
-import '../adoption/my_requests_page.dart';
-
-import '../adoption/my_requests_page.dart';
-
-import '../adoption/my_requests_page.dart';
-
 // ✅ NEW: theme toggle provider
 import '../../providers/theme/theme_mode_provider.dart';
 
@@ -56,6 +48,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       appBar: AppBar(
         title: const Text('Pawtopia'),
         actions: [
+        // AI icon in AppBar
+          IconButton(
+            tooltip: 'AI Matching',
+            onPressed: () => context.push(AppRoutes.aiMatching),
+            icon: const Icon(Icons.auto_awesome),
+          ),
           //Notifications in AppBar
           Consumer(
             builder: (context, ref, _) {

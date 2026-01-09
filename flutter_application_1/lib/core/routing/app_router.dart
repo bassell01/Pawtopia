@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 import '../routing/route_guard.dart'; // ✅ عدّل المسار حسب مكان RouteGuard عندك
 
+import '../../presentations/pages/missing_pets_ai/ai_matching_page.dart';
 import '../../presentations/pages/chat/chat_thread_page.dart';
 import '../../presentations/pages/notifications/notifications_center_page.dart';
 import '../../presentations/pages/auth/auth_gate.dart';
@@ -66,6 +67,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return ChatThreadPage(threadId: threadId);
       },
     ),
+    GoRoute(
+      path: AppRoutes.notifications,
+      builder: (context, state) => const NotificationsCenterPage(),
+      ),
 
       /// Auth
       GoRoute(
@@ -77,10 +82,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const RegisterPage(),
       ),
 
-      // Main
       GoRoute(
-        path: AppRoutes.home,
-        builder: (_, __) => const HomePage(),
+        path: AppRoutes.aiMatching,
+        builder: (_, __) => const AiMatchingPage(),
       ),
 
       // Pets

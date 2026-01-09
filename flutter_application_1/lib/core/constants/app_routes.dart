@@ -10,7 +10,7 @@ class AppRoutes {
   static const home = '/home';
   static const pets = '/pets';
   static const favorites = '/favorites';
-
+  static const aiMatching = '/ai-matching';
   static const profile = '/profile';
   static const uiKit = '/ui-kit';
   static const notifications = '/notifications';
