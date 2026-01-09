@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/pets/pet.dart';
 import '../../providers/pets/pet_providers.dart';
+import '../../providers/auth/auth_state_provider.dart'; // ✅ ADD
 
 class PetFormPage extends ConsumerStatefulWidget {
   const PetFormPage({super.key, this.existing});
@@ -36,11 +37,11 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
     _name = TextEditingController(text: p?.name ?? '');
     _type = TextEditingController(text: p?.type ?? '');
     _breed = TextEditingController(text: p?.breed ?? '');
-    _ageInMonths =
-        TextEditingController(text: p?.ageInMonths?.toString() ?? '');
+    _ageInMonths = TextEditingController(text: p?.ageInMonths?.toString() ?? '');
     _description = TextEditingController(text: p?.description ?? '');
     _location = TextEditingController(text: p?.location ?? '');
-    _photoUrls = TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
+    _photoUrls =
+        TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
 
     _gender = p?.gender;
     _size = p?.size;
@@ -60,12 +61,11 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
   }
 
   List<String> _parsePhotoUrls(String raw) {
-    final parts = raw
+    return raw
         .split(RegExp(r'[\n,]'))
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
-    return parts;
   }
 
   int? _parseIntOrNull(String s) {
@@ -75,14 +75,33 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    // ✅ Auth check (to set ownerId correctly)
+    final authState = ref.read(authUserProvider);
+    final user = authState.value;
+
+    if (authState.isLoading) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Loading user...')),
+      );
+      return;
+    }
+
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login first.')),
+      );
+      return;
+    }
 
     final now = DateTime.now();
     final existing = widget.existing;
 
     final typeLower = _type.text.trim().toLowerCase();
 
-  
     final pet = Pet(
       id: existing?.id ?? '',
       name: _name.text.trim(),
@@ -91,12 +110,14 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
       ageInMonths: _parseIntOrNull(_ageInMonths.text),
       gender: (_gender == null || _gender!.trim().isEmpty) ? null : _gender,
       size: (_size == null || _size!.trim().isEmpty) ? null : _size,
-      description:
-          _description.text.trim().isEmpty ? null : _description.text.trim(),
+      description: _description.text.trim().isEmpty ? null : _description.text.trim(),
       location: _location.text.trim().isEmpty ? null : _location.text.trim(),
       photoUrls: _parsePhotoUrls(_photoUrls.text),
       isAdopted: _isAdopted,
-       ownerId: widget.existing?.ownerId ?? 'TODO_OWNER_ID',
+
+      // ✅ FIX: ownerId = current user uid for NEW pet, keep existing for edits
+      ownerId: existing?.ownerId ?? user.uid,
+
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
@@ -111,10 +132,10 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
         await updatePet(pet);
       }
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save pet: $e')),
       );
@@ -145,8 +166,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
 
               TextFormField(
                 controller: _type,
-                decoration:
-                    const InputDecoration(labelText: 'Type (dog/cat) *'),
+                decoration: const InputDecoration(labelText: 'Type (dog/cat) *'),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
@@ -176,9 +196,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
               const SizedBox(height: 12),
 
               DropdownButtonFormField<String>(
-                initialValue: (_gender == null || _gender!.isEmpty)
-                    ? null
-                    : _gender,
+                initialValue: (_gender == null || _gender!.isEmpty) ? null : _gender,
                 decoration: const InputDecoration(labelText: 'Gender (optional)'),
                 items: const [
                   DropdownMenuItem(value: 'male', child: Text('Male')),
@@ -189,8 +207,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
               const SizedBox(height: 12),
 
               DropdownButtonFormField<String>(
-                initialValue:
-                    (_size == null || _size!.isEmpty) ? null : _size,
+                initialValue: (_size == null || _size!.isEmpty) ? null : _size,
                 decoration: const InputDecoration(labelText: 'Size (optional)'),
                 items: const [
                   DropdownMenuItem(value: 'small', child: Text('Small')),
@@ -203,15 +220,13 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
 
               TextFormField(
                 controller: _location,
-                decoration:
-                    const InputDecoration(labelText: 'Location (optional)'),
+                decoration: const InputDecoration(labelText: 'Location (optional)'),
               ),
               const SizedBox(height: 12),
 
               TextFormField(
                 controller: _description,
-                decoration:
-                    const InputDecoration(labelText: 'Description (optional)'),
+                decoration: const InputDecoration(labelText: 'Description (optional)'),
                 maxLines: 4,
               ),
               const SizedBox(height: 12),
@@ -232,9 +247,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 ),
                 maxLines: 4,
               ),
-              const SizedBox(height: 12),
-
-             
               const SizedBox(height: 20),
 
               ElevatedButton(

@@ -1,4 +1,3 @@
-
 import '../constants/app_routes.dart';
 
 class RouteGuard {
@@ -12,24 +11,29 @@ class RouteGuard {
     required bool authLoading,
     required bool roleLoading,
   }) {
-    // While loading (splash time), keep user on splash
+    // While loading (splash/gate time), keep user on gate only
     if (authLoading || (isLoggedIn && roleLoading)) {
-      return location == AppRoutes.authGate ? null : AppRoutes.authGate;
+      return (location == AppRoutes.authGate) ? null : AppRoutes.authGate;
     }
 
-    final isAuthRoute = location == AppRoutes.login || location == AppRoutes.register;
-    final isSplash = location == AppRoutes.authGate;
-    final isAdminRoute = location.startsWith(AppRoutes.adminDashboard);
+    final isAuthRoute =
+        location == AppRoutes.login || location == AppRoutes.register;
 
-    // Not logged in -> allow only auth routes (and splash)
+    final isGate = location == AppRoutes.authGate;
+
+    // Admin-only area protection: match "/admin" or "/admin/..."
+    final isAdminRoute =
+        location == AppRoutes.adminDashboard ||
+        location.startsWith('${AppRoutes.adminDashboard}/');
+
+    // Not logged in -> allow only auth routes (and gate)
     if (!isLoggedIn) {
-      if (isAuthRoute || isSplash) return null;
+      if (isAuthRoute || isGate) return null;
       return AppRoutes.login;
     }
 
-    // Logged in -> prevent going back to auth routes or splash
-    if (isAuthRoute || isSplash) {
-      // Admin users go to admin dashboard; others go home
+    // Logged in -> prevent going back to auth routes or gate
+    if (isAuthRoute || isGate) {
       return (role == 'admin') ? AppRoutes.adminDashboard : AppRoutes.home;
     }
 
@@ -38,7 +42,6 @@ class RouteGuard {
       return AppRoutes.home;
     }
 
-    // Allowed
     return null;
   }
 }

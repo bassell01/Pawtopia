@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/presentations/pages/adoption/adoption_hub_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,10 @@ import '../../providers/chat/chat_providers.dart';
 
 import '../favorites/favorites_page.dart';
 import '../pets/pet_list_page.dart';
+import '../adoption/my_requests_page.dart';
+
+import '../adoption/my_requests_page.dart';
+
 
 
 class HomePage extends ConsumerStatefulWidget {
@@ -73,7 +78,7 @@ class _AdoptionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Adoption tab'));
+    return const AdoptionHubPage();
   }
 }
 
