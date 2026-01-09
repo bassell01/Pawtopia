@@ -12,6 +12,8 @@ import '../../providers/pets/pet_list_controller.dart';
 import '../../providers/pets/pet_providers.dart';
 import '../../widgets/pets/pet_card.dart';
 
+// ✅ Import the PetFormResult types from the SAME file (no new files)
+import 'pet_form_page.dart';
 
 class PetListPage extends ConsumerStatefulWidget {
   const PetListPage({super.key});
@@ -24,11 +26,86 @@ class _PetListPageState extends ConsumerState<PetListPage> {
   String? _type;
   bool _onlyAvailable = true;
 
+  void _showUndoSnackBar(PetFormResult res) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+
+    final deletePet = ref.read(deletePetUseCaseProvider);
+    final updatePet = ref.read(updatePetUseCaseProvider);
+
+    if (res is PetCreatedResult) {
+      final controller = messenger.showSnackBar(
+        SnackBar(
+          content: const Text('Pet added'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () async {
+              try {
+                await deletePet(res.createdPetId);
+              } catch (e) {
+                if (!mounted) return;
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Undo failed'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+      );
+
+      // ✅ Force dismiss after 2 seconds even if UNDO exists
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        controller.close();
+      });
+    } else if (res is PetUpdatedResult) {
+      final controller = messenger.showSnackBar(
+        SnackBar(
+          content: const Text('Pet updated'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () async {
+              try {
+                await updatePet(res.before);
+              } catch (e) {
+                if (!mounted) return;
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Undo failed'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+      );
+
+      // ✅ Force dismiss after 2 seconds even if UNDO exists
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        controller.close();
+      });
+    }
+  }
+
+  Future<void> _openAddPet() async {
+    // ✅ Await result from PetFormPage route
+    final res = await context.push<PetFormResult>(AppRoutes.addPet);
+    if (!mounted) return;
+    if (res != null) _showUndoSnackBar(res);
+  }
+
   @override
   Widget build(BuildContext context) {
     final filter = PetsStreamFilter(type: _type, onlyAvailable: _onlyAvailable);
-
     final petsAsync = ref.watch(petsStreamProvider(filter));
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppStrings.petsTitle),
@@ -40,16 +117,10 @@ class _PetListPageState extends ConsumerState<PetListPage> {
           ),
         ],
       ),
-
-      // ✅ FAB visible only for shelter/admin
-      floatingActionButton: 
-     FloatingActionButton(
-        onPressed: () => context.push(AppRoutes.addPet),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddPet,
         child: const Icon(Icons.add),
-      )
-    ,
-
-
+      ),
       body: Column(
         children: [
           _PetFilterBar(
@@ -77,7 +148,7 @@ class _PetListPageState extends ConsumerState<PetListPage> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(AppSizes.screenPadding),
                     itemCount: uiPets.length,
-                    separatorBuilder: (_, _) =>
+                    separatorBuilder: (_, __) =>
                         const SizedBox(height: AppSizes.listItemSpacing),
                     itemBuilder: (context, i) => PetCard(
                       id: uiPets[i].id,
@@ -86,13 +157,12 @@ class _PetListPageState extends ConsumerState<PetListPage> {
                       location: uiPets[i].location,
                       imageUrl: uiPets[i].thumbnailUrl,
                       isAdopted: uiPets[i].isAdopted,
-                      onTap: () {
-                        context.push(
-                          AppRoutes.petDetails.replaceFirst(
-                            ':id',
-                            uiPets[i].id,
-                          ),
+                      onTap: () async {
+                        final res = await context.push<PetFormResult>(
+                          AppRoutes.petDetails.replaceFirst(':id', uiPets[i].id),
                         );
+                        if (!context.mounted) return;
+                        if (res != null) _showUndoSnackBar(res);
                       },
                     ),
                   ),
@@ -127,7 +197,6 @@ class _PetFilterBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(AppSizes.screenPadding),
       child: DropdownButtonFormField<String>(
-        // Flutter 3.33+ ✅
         initialValue: dropdownValue(),
         decoration: const InputDecoration(labelText: 'Type'),
         items: types
@@ -148,4 +217,3 @@ class _PetFilterBar extends StatelessWidget {
 extension on String {
   String capitalize() => isEmpty ? this : this[0].toUpperCase() + substring(1);
 }
-

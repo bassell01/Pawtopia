@@ -75,7 +75,6 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
     }
   }
 
-
   Future<bool> updateStatus({
     required String requestId,
     required AdoptionStatus status,

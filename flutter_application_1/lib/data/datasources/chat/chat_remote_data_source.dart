@@ -44,26 +44,56 @@ class ChatRemoteDataSource {
   }
 
   Future<void> sendMessage({
-    required String threadId,
-    required String senderId,
-    required String text,
-  }) async {
-    final threadRef = _fs.col('chat_threads').doc(threadId);
-    final msgRef = threadRef.collection('messages').doc();
+  required String threadId,
+  required String senderId,
+  required String text,
+}) async {
+  final threadRef = _fs.col('chat_threads').doc(threadId);
+  final msgRef = threadRef.collection('messages').doc();
 
-    final now = FieldValue.serverTimestamp();
+  final now = FieldValue.serverTimestamp();
 
-    await _fs.runTransaction((tx) async {
-      tx.set(msgRef, {
-        'senderId': senderId,
-        'text': text,
-        'sentAt': now,
-      });
+  // 1) write message + update thread
+  await _fs.runTransaction((tx) async {
+    tx.set(msgRef, {
+      'senderId': senderId,
+      'text': text,
+      'sentAt': now,
+    });
 
-      tx.update(threadRef, {
-        'lastMessage': text,
-        'lastMessageAt': now,
-      });
+    tx.update(threadRef, {
+      'lastMessage': text,
+      'lastMessageAt': now,
+    });
+  });
+  final senderProfileSnap =
+      await _fs.col('profiles').doc(senderId).get();
+
+  final senderData = senderProfileSnap.data();
+  final senderName =
+      senderData?['displayName'] ??
+      'Someone';
+
+  // 2) After success -> notify other participants
+  final threadSnap = await threadRef.get();
+  final data = threadSnap.data();
+  if (data == null) return;
+
+  final participants = List<String>.from(data['participantIds'] ?? const []);
+  final receivers = participants.where((id) => id != senderId).toList();
+  if (receivers.isEmpty) return;
+
+  for (final uid in receivers) {
+    await _fs.col('profiles/$uid/notifications').add({
+      'title': 'New Message has been sent by '+ senderName,
+      'body': text,
+      'type': 'chat',
+      'deepLink': '/chat/thread/$threadId',
+      'data': {'threadId': threadId, 'senderId': senderId},
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),    
     });
   }
+}
+
 }

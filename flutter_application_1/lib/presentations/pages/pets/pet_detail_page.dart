@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -18,22 +19,81 @@ class PetDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final petAsync = ref.watch(petDetailControllerProvider(petId));
-    final authAsync = ref.watch(authUserProvider);
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+    Future<void> confirmAndDelete({
+      required String petId,
+      required String petName,
+    }) async {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Delete pet'),
+          content: Text('Are you sure you want to delete "$petName"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      try {
+        final deletePet = ref.read(deletePetUseCaseProvider);
+        await deletePet(petId);
+
+        if (!context.mounted) return;
+        Navigator.of(context).pop(); // go back to list
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete pet: $e')),
+        );
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pet Details'),
         actions: [
           petAsync.maybeWhen(
-            data: (pet) => IconButton(
-              tooltip: 'Edit pet',
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => PetFormPage(existing: pet)),
-                );
-              },
-            ),
+            data: (pet) {
+              final isOwner = (currentUid != null && pet.ownerId == currentUid);
+
+              // ✅ Only owner can see Edit + Delete
+              if (!isOwner) return const SizedBox.shrink();
+
+              return Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Edit pet',
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PetFormPage(existing: pet),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Delete pet',
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => confirmAndDelete(
+                      petId: pet.id,
+                      petName: pet.name,
+                    ),
+                  ),
+                ],
+              );
+            },
             orElse: () => const SizedBox.shrink(),
           ),
         ],
@@ -43,16 +103,12 @@ class PetDetailPage extends ConsumerWidget {
       floatingActionButton: petAsync.maybeWhen(
         data: (pet) {
           // ✅ hide if already adopted
+          // ✅ Hide Adopt if already adopted
           if (pet.isAdopted == true) return const SizedBox.shrink();
 
-          // ✅ wait auth to know who is user
-          final me = authAsync.valueOrNull;
-          if (me == null) return const SizedBox.shrink(); // not logged in
-
-          // ✅ hide adopt button if user is owner
-          if (me.uid == pet.ownerId) return const SizedBox.shrink();
-
-          final firstPhoto = pet.photoUrls.isNotEmpty ? pet.photoUrls.first : null;
+          // ✅ Hide Adopt if current user is owner
+          final isOwner = (currentUid != null && pet.ownerId == currentUid);
+          if (isOwner) return const SizedBox.shrink();
 
           return SizedBox(
             width: MediaQuery.of(context).size.width * 0.75,
@@ -62,12 +118,8 @@ class PetDetailPage extends ConsumerWidget {
                 final ok = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
                     builder: (_) => AdoptionFormPage(
-                      petId: pet.id,
-                      ownerId: pet.ownerId,
-                      petName: pet.name,
-                      petType: pet.type,
-                      petLocation: pet.location,
-                      petPhotoUrl: firstPhoto,
+                      petId: pet.id, 
+                      ownerId: pet.ownerId, petName: '', petType: '', 
                     ),
                   ),
                 );

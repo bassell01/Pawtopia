@@ -40,7 +40,6 @@ Future<void> initDependencies() async {
     );
   }
 
-
   // ================== Wrapper services ==================
   if (!sl.isRegistered<FirebaseAuthService>()) {
     sl.registerLazySingleton<FirebaseAuthService>(

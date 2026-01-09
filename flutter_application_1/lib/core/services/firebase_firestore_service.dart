@@ -26,5 +26,6 @@ final firebaseFirestoreServiceProvider = Provider<FirebaseFirestoreService>((ref
   return FirebaseFirestoreService(FirebaseFirestore.instance);
 });
 
+final firestoreServiceProvider = firebaseFirestoreServiceProvider;
   
 
