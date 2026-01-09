@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -25,15 +26,24 @@ class PetDetailPage extends ConsumerWidget {
         title: const Text('Pet Details'),
         actions: [
           petAsync.maybeWhen(
-            data: (pet) => IconButton(
-              tooltip: 'Edit pet',
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => PetFormPage(existing: pet)),
-                );
-              },
-            ),
+            data: (pet) {
+              // ✅ current logged-in user id
+              final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+              // ✅ Hide Edit if user is not the owner
+              final canEdit = (currentUid != null && currentUid == pet.ownerId);
+              if (!canEdit) return const SizedBox.shrink();
+
+              return IconButton(
+                tooltip: 'Edit pet',
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => PetFormPage(existing: pet)),
+                  );
+                },
+              );
+            },
             orElse: () => const SizedBox.shrink(),
           ),
         ],
@@ -43,6 +53,7 @@ class PetDetailPage extends ConsumerWidget {
       floatingActionButton: petAsync.maybeWhen(
         data: (pet) {
           // ✅ hide if already adopted
+          // ✅ Hide Adopt if already adopted
           if (pet.isAdopted == true) return const SizedBox.shrink();
 
           // ✅ wait auth to know who is user
@@ -54,6 +65,15 @@ class PetDetailPage extends ConsumerWidget {
 
           final firstPhoto = pet.photoUrls.isNotEmpty ? pet.photoUrls.first : null;
 
+          // ✅ current logged-in user id
+          final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+          // ✅ Hide Adopt if current user IS the owner
+          final isOwner = (currentUid != null && currentUid == pet.ownerId);
+          if (isOwner) {
+            return const SizedBox.shrink();
+          }
+
           return SizedBox(
             width: MediaQuery.of(context).size.width * 0.75,
             height: 52,
@@ -62,12 +82,8 @@ class PetDetailPage extends ConsumerWidget {
                 final ok = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
                     builder: (_) => AdoptionFormPage(
-                      petId: pet.id,
-                      ownerId: pet.ownerId,
-                      petName: pet.name,
-                      petType: pet.type,
-                      petLocation: pet.location,
-                      petPhotoUrl: firstPhoto,
+                      petId: pet.id, 
+                      ownerId: pet.ownerId, petName: '', petType: '', 
                     ),
                   ),
                 );

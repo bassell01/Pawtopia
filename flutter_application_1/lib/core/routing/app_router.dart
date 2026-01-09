@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 import '../routing/route_guard.dart'; // ✅ عدّل المسار حسب مكان RouteGuard عندك
 
+import '../../presentations/pages/notifications/notifications_center_page.dart';
 import '../../presentations/pages/auth/auth_gate.dart';
 import '../../presentations/pages/auth/login_page.dart';
 import '../../presentations/pages/auth/register_page.dart';
@@ -63,7 +64,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const RegisterPage(),
       ),
 
-      /// Pets
+      // Main
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (_, __) => const HomePage(),
+      ),
+
+      // Pets
       GoRoute(
         path: AppRoutes.pets,
         builder: (_, __) => const PetListPage(),
