@@ -15,6 +15,9 @@ class AdoptionRequestCard extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
 
+  // ✅ ADD: open chat button action
+  final VoidCallback? onOpenChat;
+
   const AdoptionRequestCard({
     super.key,
     required this.r,
@@ -23,6 +26,9 @@ class AdoptionRequestCard extends StatelessWidget {
     this.onCancel,
     this.onAccept,
     this.onReject,
+
+    // ✅ ADD
+    this.onOpenChat,
   });
 
   /// Title widget that guarantees showing pet name (from request OR pets doc)
@@ -137,13 +143,22 @@ class AdoptionRequestCard extends StatelessWidget {
                     ),
                   ],
 
-                  // -------- Actions
-                  if (onCancel != null || onAccept != null || onReject != null) ...[
+                  // -------- Actions (ADD open chat support)
+                  if (onCancel != null ||
+                      onAccept != null ||
+                      onReject != null ||
+                      onOpenChat != null) ...[
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        if (onOpenChat != null)
+                          OutlinedButton.icon(
+                            onPressed: onOpenChat,
+                            icon: const Icon(Icons.chat_bubble_outline),
+                            label: const Text('Open Chat'),
+                          ),
                         if (onCancel != null)
                           OutlinedButton.icon(
                             onPressed: onCancel,
