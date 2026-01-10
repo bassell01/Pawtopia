@@ -13,6 +13,7 @@ import '../../providers/chat/chat_providers.dart';
 import '../../providers/chat/chat_messages_controller.dart';
 
 import 'pet_form_page.dart';
+import '../adoption/adoption_form_page.dart'; // ✅ ADD back
 
 class PetDetailPage extends ConsumerWidget {
   const PetDetailPage({super.key, required this.petId});
@@ -54,8 +55,7 @@ class PetDetailPage extends ConsumerWidget {
         actions: [
           petAsync.maybeWhen(
             data: (pet) {
-              final isOwner =
-                  currentUid != null && pet.ownerId == currentUid;
+              final isOwner = currentUid != null && pet.ownerId == currentUid;
               if (!isOwner) return const SizedBox.shrink();
 
               return Row(
@@ -77,17 +77,14 @@ class PetDetailPage extends ConsumerWidget {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('Delete pet'),
-                          content:
-                              Text('Delete "${pet.name}" permanently?'),
+                          content: Text('Delete "${pet.name}" permanently?'),
                           actions: [
                             TextButton(
-                              onPressed: () =>
-                                  Navigator.of(ctx).pop(false),
+                              onPressed: () => Navigator.of(ctx).pop(false),
                               child: const Text('Cancel'),
                             ),
                             TextButton(
-                              onPressed: () =>
-                                  Navigator.of(ctx).pop(true),
+                              onPressed: () => Navigator.of(ctx).pop(true),
                               child: const Text('Delete'),
                             ),
                           ],
@@ -95,9 +92,7 @@ class PetDetailPage extends ConsumerWidget {
                       );
 
                       if (ok == true) {
-                        await ref
-                            .read(deletePetUseCaseProvider)
-                            .call(pet.id);
+                        await ref.read(deletePetUseCaseProvider).call(pet.id);
                         if (context.mounted) {
                           Navigator.of(context).pop();
                         }
@@ -137,22 +132,17 @@ class PetDetailPage extends ConsumerWidget {
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 8),
-
                     Text(
                       '${pet.type}${pet.breed != null ? " • ${pet.breed}" : ""}',
                     ),
-
                     if (pet.location != null) ...[
                       const SizedBox(height: 6),
                       Text('Location: ${pet.location}'),
                     ],
-
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 12),
-
                     Text(pet.description ?? 'No description'),
-
                     const SizedBox(height: 120),
                   ],
                 ),
@@ -163,30 +153,30 @@ class PetDetailPage extends ConsumerWidget {
       ),
 
       /// =============================
-      /// OWNER ACTION BAR
+      /// OWNER + ACTIONS BAR (BOTTOM)
       /// =============================
       bottomNavigationBar: petAsync.maybeWhen(
         data: (pet) {
-          final isOwner =
-              currentUid != null && pet.ownerId == currentUid;
-          if (isOwner || currentUid == null) {
-            return const SizedBox.shrink();
-          }
+          // If not logged in -> no bottom actions
+          if (currentUid == null) return const SizedBox.shrink();
 
-          final ownerProfileAsync =
-              ref.watch(profileStreamProvider(pet.ownerId));
+          final isOwner = pet.ownerId == currentUid;
+          // ✅ You wanted the owner bar fixed, but ONLY for non-owners
+          if (isOwner) return const SizedBox.shrink();
+
+          final ownerProfileAsync = ref.watch(profileStreamProvider(pet.ownerId));
 
           return ownerProfileAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
             data: (owner) {
-              final name =
-                  owner.displayName ?? owner.fullName ?? 'Owner';
+              final ownerName = owner.displayName ?? owner.fullName ?? 'Owner';
+
+              final canAdopt = pet.isAdopted != true; // same logic: hide if adopted
 
               return SafeArea(
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     boxShadow: const [
@@ -198,33 +188,69 @@ class PetDetailPage extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
+                      // Owner avatar
                       CircleAvatar(
                         radius: 22,
                         backgroundImage:
                             owner.photoUrl != null && owner.photoUrl!.isNotEmpty
                                 ? NetworkImage(owner.photoUrl!)
                                 : null,
-                        child: owner.photoUrl == null
+                        child: (owner.photoUrl == null || owner.photoUrl!.isEmpty)
                             ? const Icon(Icons.person)
                             : null,
                       ),
                       const SizedBox(width: 12),
+
+                      // Owner name
                       Expanded(
                         child: Text(
-                          name,
+                          ownerName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
+
+                      // Chat icon
                       IconButton(
+                        tooltip: 'Chat',
                         icon: const Icon(Icons.chat_bubble_outline),
                         onPressed: () => openChat(
                           myUid: currentUid,
                           ownerUid: pet.ownerId,
                         ),
                       ),
+
+                      // ✅ Adopt button (same logic: not owner, not adopted)
+                      if (canAdopt) ...[
+                        const SizedBox(width: 6),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final ok = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (_) => AdoptionFormPage(
+                                  petId: pet.id,
+                                  ownerId: pet.ownerId,
+                                  petName: pet.name,
+                                  petType: pet.type,
+                                ),
+                              ),
+                            );
+
+                            if (!context.mounted) return;
+                            if (ok == true) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Request sent ✅')),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.volunteer_activism, size: 18),
+                          label: const Text('Adopt'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -246,12 +272,10 @@ class _FullHeightPhotoSlider extends StatefulWidget {
   final List<String> photoUrls;
 
   @override
-  State<_FullHeightPhotoSlider> createState() =>
-      _FullHeightPhotoSliderState();
+  State<_FullHeightPhotoSlider> createState() => _FullHeightPhotoSliderState();
 }
 
-class _FullHeightPhotoSliderState
-    extends State<_FullHeightPhotoSlider> {
+class _FullHeightPhotoSliderState extends State<_FullHeightPhotoSlider> {
   int _index = 0;
 
   bool _isHttpUrl(String url) {
@@ -274,74 +298,61 @@ class _FullHeightPhotoSliderState
   }
 
   Widget _smartImage(BuildContext context, String raw) {
-  final url = raw.trim();
-  if (url.isEmpty) return _placeholder(context);
+    final url = raw.trim();
+    if (url.isEmpty) return _placeholder(context);
 
-  Widget img;
+    Widget img;
 
-  if (_isHttpUrl(url)) {
-    img = Image.network(
-      url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      // ✅ show placeholder if URL fails (403, bad link, etc.)
-      errorBuilder: (_, __, ___) => _placeholder(context),
-      // ✅ optional: show loader while fetching
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            value: progress.expectedTotalBytes == null
-                ? null
-                : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!,
-          ),
-        );
-      },
-    );
-  } else if (_isLocalFilePath(url)) {
-    final file = url.toLowerCase().startsWith('file://')
-        ? File.fromUri(Uri.parse(url))
-        : File(url);
+    if (_isHttpUrl(url)) {
+      img = Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) => _placeholder(context),
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: progress.expectedTotalBytes == null
+                  ? null
+                  : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!,
+            ),
+          );
+        },
+      );
+    } else if (_isLocalFilePath(url)) {
+      final file = url.toLowerCase().startsWith('file://')
+          ? File.fromUri(Uri.parse(url))
+          : File(url);
 
-    img = Image.file(
-      file,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (_, __, ___) => _placeholder(context),
-    );
-  } else {
-    // gs:// or anything else not supported directly
-    return _placeholder(context);
-  }
+      img = Image.file(
+        file,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) => _placeholder(context),
+      );
+    } else {
+      // gs:// or anything else not supported directly
+      return _placeholder(context);
+    }
 
-  // ✅ IMPORTANT:
-  // ClipRect prevents InteractiveViewer from painting weirdly / overflow.
-  // SizedBox.expand ensures the image actually has size in PageView.
-  return ClipRect(
-    child: InteractiveViewer(
-      panEnabled: false,
-      scaleEnabled: true,
-      minScale: 1.0,
-      maxScale: 4.0,
-      boundaryMargin: const EdgeInsets.all(80),
-      child: SizedBox.expand(
-        child: img,
+    return ClipRect(
+      child: InteractiveViewer(
+        panEnabled: false,
+        scaleEnabled: true,
+        minScale: 1.0,
+        maxScale: 4.0,
+        boundaryMargin: const EdgeInsets.all(80),
+        child: SizedBox.expand(child: img),
       ),
-    ),
-  );
-}
-
-
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final photos = widget.photoUrls
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
+    final photos = widget.photoUrls.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     final height = MediaQuery.of(context).size.height * 0.6;
 
     if (photos.isEmpty) {
@@ -397,12 +408,10 @@ class _ChatThreadSheet extends ConsumerStatefulWidget {
   final String myUid;
 
   @override
-  ConsumerState<_ChatThreadSheet> createState() =>
-      _ChatThreadSheetState();
+  ConsumerState<_ChatThreadSheet> createState() => _ChatThreadSheetState();
 }
 
-class _ChatThreadSheetState
-    extends ConsumerState<_ChatThreadSheet> {
+class _ChatThreadSheetState extends ConsumerState<_ChatThreadSheet> {
   final _ctrl = TextEditingController();
 
   @override
@@ -413,8 +422,7 @@ class _ChatThreadSheetState
 
   @override
   Widget build(BuildContext context) {
-    final messagesAsync =
-        ref.watch(chatMessagesControllerProvider(widget.threadId));
+    final messagesAsync = ref.watch(chatMessagesControllerProvider(widget.threadId));
 
     return Scaffold(
       appBar: AppBar(
@@ -431,8 +439,7 @@ class _ChatThreadSheetState
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text(e.toString())),
               data: (messages) => ListView.builder(
                 reverse: true,
@@ -443,16 +450,12 @@ class _ChatThreadSheetState
                   final isMe = m.senderId == widget.myUid;
 
                   return Align(
-                    alignment:
-                        isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
-                      margin:
-                          const EdgeInsets.symmetric(vertical: 4),
+                      margin: const EdgeInsets.symmetric(vertical: 4),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isMe
-                            ? Colors.blue.withOpacity(0.2)
-                            : Colors.grey.withOpacity(0.2),
+                        color: isMe ? Colors.blue.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(m.text),
@@ -468,9 +471,7 @@ class _ChatThreadSheetState
                 Expanded(
                   child: TextField(
                     controller: _ctrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Type message',
-                    ),
+                    decoration: const InputDecoration(hintText: 'Type message'),
                   ),
                 ),
                 IconButton(
