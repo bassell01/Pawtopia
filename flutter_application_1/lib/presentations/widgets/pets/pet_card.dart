@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../favorites/favorite_icon_button.dart';
+import '../../providers/favorites/favorites_provider.dart';
 
 class PetCard extends StatelessWidget {
   const PetCard({
@@ -31,10 +33,6 @@ class PetCard extends StatelessWidget {
 
   bool _isLocalFilePath(String url) {
     final t = url.trim().toLowerCase();
-    // Common local cases:
-    // /data/user/0/...  (Android)
-    // file:///data/user/0/...
-    // C:\... (Windows dev)
     return t.startsWith('/') || t.startsWith('file://') || t.contains(':/');
   }
 
@@ -53,19 +51,15 @@ class PetCard extends StatelessWidget {
       return _placeholder(context);
     }
 
-    // ✅ If it is a normal web URL (Firebase Storage download URL, CDN, etc.)
     if (_isHttpUrl(url)) {
       return Image.network(
         url,
         fit: BoxFit.cover,
-        // ✅ If the URL fails (e.g., 403), don’t crash — show placeholder
         errorBuilder: (_, __, ___) => _placeholder(context),
       );
     }
 
-    // ✅ If it is a local file path
     if (_isLocalFilePath(url)) {
-      // Handle file:// URIs by converting to File safely
       final file = url.trim().toLowerCase().startsWith('file://')
           ? File.fromUri(Uri.parse(url))
           : File(url);
@@ -73,13 +67,10 @@ class PetCard extends StatelessWidget {
       return Image.file(
         file,
         fit: BoxFit.cover,
-        // ✅ If the file doesn’t exist anymore, don’t crash
         errorBuilder: (_, __, ___) => _placeholder(context),
       );
     }
 
-    // ✅ Anything else (like gs://...) -> we can’t display directly
-    // It must be converted to an https download URL before UI can show it.
     return _placeholder(context);
   }
 
@@ -157,11 +148,49 @@ class PetCard extends StatelessWidget {
                 ),
               ),
 
+              /// ❤️ Favorites count ABOVE heart icon
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: FavoriteIconButton(
-                  petId: id,
-                  activeColor: Colors.red,
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final countAsync = ref.watch(favoritesCountProvider(id));
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 🔢 COUNT (on top)
+                        countAsync.when(
+                          data: (count) {
+                            // Hide when 0 for clean UI
+                            if (count <= 0) return const SizedBox(height: 14);
+
+                            return Text(
+                              '$count',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            );
+                          },
+                          loading: () => const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          error: (_, __) => const SizedBox(height: 14),
+                        ),
+
+                        // Small spacing between number and heart
+                        const SizedBox(height: 2),
+
+                        // ❤️ HEART BUTTON
+                        FavoriteIconButton(
+                          petId: id,
+                          activeColor: Colors.red,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],

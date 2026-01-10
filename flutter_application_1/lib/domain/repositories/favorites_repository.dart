@@ -23,4 +23,7 @@ abstract class FavoritesRepository {
     required String userId,
     required String petId,
   });
+
+  /// ✅ NEW: live count of favorites for a specific pet
+  Stream<int> watchFavoritesCount(String petId);
 }
