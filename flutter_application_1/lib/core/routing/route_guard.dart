@@ -13,7 +13,7 @@ class RouteGuard {
   }) {
     // While loading (splash/gate time), keep user on gate only
     if (authLoading || (isLoggedIn && roleLoading)) {
-      return (location == AppRoutes.authGate) ? null : AppRoutes.authGate;
+      return (location == AppRoutes.splash) ? null : AppRoutes.splash;
     }
 
     final isAuthRoute =
