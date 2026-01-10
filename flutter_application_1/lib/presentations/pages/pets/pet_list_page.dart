@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -12,7 +13,6 @@ import '../../providers/pets/pet_list_controller.dart';
 import '../../providers/pets/pet_providers.dart';
 import '../../widgets/pets/pet_card.dart';
 
-// ✅ Import the PetFormResult types from the SAME file (no new files)
 import 'pet_form_page.dart';
 
 class PetListPage extends ConsumerStatefulWidget {
@@ -24,7 +24,9 @@ class PetListPage extends ConsumerStatefulWidget {
 
 class _PetListPageState extends ConsumerState<PetListPage> {
   String? _type;
+
   bool _onlyAvailable = true;
+  bool _onlyMine = false;
 
   void _showUndoSnackBar(PetFormResult res) {
     final messenger = ScaffoldMessenger.of(context);
@@ -42,7 +44,7 @@ class _PetListPageState extends ConsumerState<PetListPage> {
             onPressed: () async {
               try {
                 await deletePet(res.createdPetId);
-              } catch (e) {
+              } catch (_) {
                 if (!mounted) return;
                 messenger.hideCurrentSnackBar();
                 messenger.showSnackBar(
@@ -57,7 +59,6 @@ class _PetListPageState extends ConsumerState<PetListPage> {
         ),
       );
 
-      // ✅ Force dismiss after 2 seconds even if UNDO exists
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
         controller.close();
@@ -71,7 +72,7 @@ class _PetListPageState extends ConsumerState<PetListPage> {
             onPressed: () async {
               try {
                 await updatePet(res.before);
-              } catch (e) {
+              } catch (_) {
                 if (!mounted) return;
                 messenger.hideCurrentSnackBar();
                 messenger.showSnackBar(
@@ -86,7 +87,6 @@ class _PetListPageState extends ConsumerState<PetListPage> {
         ),
       );
 
-      // ✅ Force dismiss after 2 seconds even if UNDO exists
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
         controller.close();
@@ -95,7 +95,6 @@ class _PetListPageState extends ConsumerState<PetListPage> {
   }
 
   Future<void> _openAddPet() async {
-    // ✅ Await result from PetFormPage route
     final res = await context.push<PetFormResult>(AppRoutes.addPet);
     if (!mounted) return;
     if (res != null) _showUndoSnackBar(res);
@@ -103,72 +102,114 @@ class _PetListPageState extends ConsumerState<PetListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
     final filter = PetsStreamFilter(type: _type, onlyAvailable: _onlyAvailable);
     final petsAsync = ref.watch(petsStreamProvider(filter));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.petsTitle),
-        actions: [
-          IconButton(
-            tooltip: _onlyAvailable ? 'Show all pets' : 'Show available only',
-            icon: Icon(_onlyAvailable ? Icons.check_circle : Icons.list),
-            onPressed: () => setState(() => _onlyAvailable = !_onlyAvailable),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddPet,
         child: const Icon(Icons.add),
       ),
-      body: Column(
-        children: [
-          _PetFilterBar(
-            selectedType: _type,
-            onTypeChanged: (t) => setState(() => _type = t),
+      body: CustomScrollView(
+        slivers: [
+          // ✅ AppBar hides on scroll down, reappears on scroll up
+          SliverAppBar(
+            title: Text(AppStrings.petsTitle),
+            floating: true,
+            snap: true,
+            actions: const [], // ✅ no actions
           ),
-          Expanded(
-            child: petsAsync.when(
-              loading: () => const Center(child: LoadingIndicator()),
-              error: (e, _) => ErrorView(
+
+          // ✅ Filter bar hides on scroll down, reappears on scroll up
+          SliverPersistentHeader(
+            floating: true,
+            delegate: _FilterHeaderDelegate(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.screenPadding,
+                  AppSizes.screenPadding,
+                  AppSizes.screenPadding,
+                  8,
+                ),
+                child: _PetFilterBar(
+                  selectedType: _type,
+                  onlyAvailable: _onlyAvailable,
+                  onlyMine: _onlyMine,
+                  onTypeChanged: (t) => setState(() => _type = t),
+                  onOnlyAvailableChanged: (v) =>
+                      setState(() => _onlyAvailable = v),
+                  onOnlyMineChanged: (v) => setState(() => _onlyMine = v),
+                ),
+              ),
+            ),
+          ),
+
+          // ✅ Content
+          petsAsync.when(
+            loading: () => const SliverFillRemaining(
+              child: Center(child: LoadingIndicator()),
+            ),
+            error: (e, _) => SliverFillRemaining(
+              child: ErrorView(
                 message: e.toString(),
                 onRetry: () => ref.invalidate(petsStreamProvider(filter)),
               ),
-              data: (pets) {
-                final uiPets = pets.map(PetSummaryUiModel.fromEntity).toList();
+            ),
+            data: (pets) {
+              // ✅ Apply "My pets" filter in UI layer
+              final filtered = (!_onlyMine || uid == null)
+                  ? pets
+                  : pets.where((p) => p.ownerId == uid).toList();
 
-                if (uiPets.isEmpty) {
-                  return Center(child: Text(AppStrings.noPetsFound));
-                }
+              final uiPets = filtered.map(PetSummaryUiModel.fromEntity).toList();
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(petsStreamProvider(filter));
-                  },
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSizes.screenPadding),
-                    itemCount: uiPets.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSizes.listItemSpacing),
-                    itemBuilder: (context, i) => PetCard(
-                      id: uiPets[i].id,
-                      name: uiPets[i].name,
-                      type: uiPets[i].type,
-                      location: uiPets[i].location,
-                      imageUrl: uiPets[i].thumbnailUrl,
-                      isAdopted: uiPets[i].isAdopted,
-                      onTap: () async {
-                        final res = await context.push<PetFormResult>(
-                          AppRoutes.petDetails.replaceFirst(':id', uiPets[i].id),
-                        );
-                        if (!context.mounted) return;
-                        if (res != null) _showUndoSnackBar(res);
-                      },
+              if (uiPets.isEmpty) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      _onlyMine ? 'No pets owned by you' : AppStrings.noPetsFound,
                     ),
                   ),
                 );
-              },
-            ),
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.all(AppSizes.screenPadding),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) {
+                      final pet = uiPets[i];
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i == uiPets.length - 1
+                              ? 0
+                              : AppSizes.listItemSpacing,
+                        ),
+                        child: PetCard(
+                          id: pet.id,
+                          name: pet.name,
+                          type: pet.type,
+                          location: pet.location,
+                          imageUrl: pet.thumbnailUrl,
+                          isAdopted: pet.isAdopted,
+                          onTap: () async {
+                            final res = await context.push<PetFormResult>(
+                              AppRoutes.petDetails.replaceFirst(':id', pet.id),
+                            );
+                            if (!context.mounted) return;
+                            if (res != null) _showUndoSnackBar(res);
+                          },
+                        ),
+                      );
+                    },
+                    childCount: uiPets.length,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -180,10 +221,20 @@ class _PetFilterBar extends StatelessWidget {
   const _PetFilterBar({
     required this.selectedType,
     required this.onTypeChanged,
+    required this.onlyAvailable,
+    required this.onOnlyAvailableChanged,
+    required this.onlyMine,
+    required this.onOnlyMineChanged,
   });
 
   final String? selectedType;
   final ValueChanged<String?> onTypeChanged;
+
+  final bool onlyAvailable;
+  final ValueChanged<bool> onOnlyAvailableChanged;
+
+  final bool onlyMine;
+  final ValueChanged<bool> onOnlyMineChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -194,23 +245,87 @@ class _PetFilterBar extends StatelessWidget {
       return selectedType!.capitalize();
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.screenPadding),
-      child: DropdownButtonFormField<String>(
-        initialValue: dropdownValue(),
-        decoration: const InputDecoration(labelText: 'Type'),
-        items: types
-            .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-            .toList(),
-        onChanged: (value) {
-          if (value == null || value == 'All') {
-            onTypeChanged(null);
-          } else {
-            onTypeChanged(value.toLowerCase());
-          }
-        },
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            initialValue: dropdownValue(),
+            decoration: const InputDecoration(labelText: 'Type'),
+            items: types
+                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                .toList(),
+            onChanged: (value) {
+              if (value == null || value == 'All') {
+                onTypeChanged(null);
+              } else {
+                onTypeChanged(value.toLowerCase());
+              }
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // Available checkbox
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Checkbox(
+                value: onlyAvailable,
+                onChanged: (v) => onOnlyAvailableChanged(v ?? false),
+              ),
+              const Text('Available'),
+            ],
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Mine checkbox
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Checkbox(
+                value: onlyMine,
+                onChanged: (v) => onOnlyMineChanged(v ?? false),
+              ),
+              const Text('Mine'),
+            ],
+          ),
+        ),
+      ],
     );
+  }
+}
+
+/// ✅ Makes the filter bar a floating sliver that can hide/reappear with scroll.
+class _FilterHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _FilterHeaderDelegate({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => 72;
+
+  @override
+  double get maxExtent => 72;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      elevation: overlapsContent ? 2 : 0,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _FilterHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child;
   }
 }
 

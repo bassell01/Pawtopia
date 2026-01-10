@@ -1,10 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../domain/entities/pets/pet.dart';
 import '../../providers/pets/pet_providers.dart';
-import '../../providers/auth/auth_state_provider.dart'; // ✅ ADD
+import '../../providers/auth/auth_state_provider.dart';
 
 /// ✅ Result types live in the SAME file (no new folders/files)
 sealed class PetFormResult {
@@ -58,12 +60,16 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
     _ageInMonths = TextEditingController(text: p?.ageInMonths?.toString() ?? '');
     _description = TextEditingController(text: p?.description ?? '');
     _location = TextEditingController(text: p?.location ?? '');
-    _photoUrls =
-        TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
+    _photoUrls = TextEditingController(text: (p?.photoUrls ?? const []).join('\n'));
 
     _gender = p?.gender;
     _size = p?.size;
     _isAdopted = p?.isAdopted ?? false;
+
+    // ✅ So preview updates when user types
+    _photoUrls.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -90,6 +96,54 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
     final t = s.trim();
     if (t.isEmpty) return null;
     return int.tryParse(t);
+  }
+
+  bool _isHttpUrl(String url) {
+    final t = url.trim().toLowerCase();
+    return t.startsWith('http://') || t.startsWith('https://');
+  }
+
+  bool _isLocalFilePath(String url) {
+    final t = url.trim().toLowerCase();
+    return t.startsWith('/') || t.startsWith('file://') || t.contains(':/');
+  }
+
+  Widget _placeholder(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: const Icon(Icons.pets, size: 42),
+    );
+  }
+
+  Widget _smartImage(BuildContext context, String raw) {
+    final url = raw.trim();
+    if (url.isEmpty) return _placeholder(context);
+
+    if (_isHttpUrl(url)) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (_, __, ___) => _placeholder(context),
+      );
+    }
+
+    if (_isLocalFilePath(url)) {
+      final file = url.toLowerCase().startsWith('file://')
+          ? File.fromUri(Uri.parse(url))
+          : File(url);
+
+      return Image.file(
+        file,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (_, __, ___) => _placeholder(context),
+      );
+    }
+
+    return _placeholder(context);
   }
 
   Future<void> _submit() async {
@@ -120,7 +174,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
 
     final typeLower = _type.text.trim().toLowerCase();
 
-  
     final pet = Pet(
       id: existing?.id ?? '',
       name: _name.text.trim(),
@@ -157,8 +210,6 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
           PetUpdatedResult(before: existing, after: pet),
         );
       }
-
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,6 +221,8 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
+
+    final photos = _parsePhotoUrls(_photoUrls.text);
 
     return Scaffold(
       appBar: AppBar(
@@ -188,6 +241,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _type,
                 decoration: const InputDecoration(labelText: 'Type (dog/cat) *'),
@@ -195,11 +249,13 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _breed,
                 decoration: const InputDecoration(labelText: 'Breed (optional)'),
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _ageInMonths,
                 keyboardType: TextInputType.number,
@@ -216,10 +272,9 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 },
               ),
               const SizedBox(height: 12),
+
               DropdownButtonFormField<String>(
-                initialValue: (_gender == null || _gender!.isEmpty)
-                    ? null
-                    : _gender,
+                initialValue: (_gender == null || _gender!.isEmpty) ? null : _gender,
                 decoration: const InputDecoration(labelText: 'Gender (optional)'),
                 items: const [
                   DropdownMenuItem(value: 'male', child: Text('Male')),
@@ -228,6 +283,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 onChanged: (v) => setState(() => _gender = v),
               ),
               const SizedBox(height: 12),
+
               DropdownButtonFormField<String>(
                 initialValue: (_size == null || _size!.isEmpty) ? null : _size,
                 decoration: const InputDecoration(labelText: 'Size (optional)'),
@@ -239,17 +295,20 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 onChanged: (v) => setState(() => _size = v),
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _location,
                 decoration: const InputDecoration(labelText: 'Location (optional)'),
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _description,
                 decoration: const InputDecoration(labelText: 'Description (optional)'),
                 maxLines: 4,
               ),
               const SizedBox(height: 12),
+
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _isAdopted,
@@ -257,6 +316,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 title: const Text('Mark as adopted'),
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 controller: _photoUrls,
                 decoration: const InputDecoration(
@@ -265,7 +325,37 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
                 ),
                 maxLines: 4,
               ),
+
+              const SizedBox(height: 16),
+              Text('Preview', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+
+              if (photos.isEmpty)
+                const Text('No photos yet. Paste one or more URLs above.')
+              else ...[
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: _smartImage(context, photos.first),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(photos.length, (i) {
+                    final p = photos[i];
+                    return InputChip(
+                      label: Text(_isHttpUrl(p) ? 'URL ${i + 1}' : 'Photo ${i + 1}'),
+                      onDeleted: () {
+                        final next = List<String>.from(photos)..removeAt(i);
+                        _photoUrls.text = next.join('\n');
+                      },
+                    );
+                  }),
+                ),
+              ],
+
               const SizedBox(height: 20),
+
               ElevatedButton(
                 onPressed: _submit,
                 child: Text(isEdit ? 'Save' : 'Create'),
