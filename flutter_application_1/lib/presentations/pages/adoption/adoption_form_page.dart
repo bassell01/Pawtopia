@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_application_1/core/utils/responsive.dart';
 
 import '../../providers/adoption/adoption_controller.dart';
 import '../../providers/auth/auth_state_provider.dart';
@@ -130,7 +131,7 @@ class _AdoptionFormPageState extends ConsumerState<AdoptionFormPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Adoption Request')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(R.s(context, 16)),
         child: Form(
           key: _formKey,
           child: Column(

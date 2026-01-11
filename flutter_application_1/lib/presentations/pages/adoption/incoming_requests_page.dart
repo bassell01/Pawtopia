@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/widgets/adoption_request_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_application_1/core/utils/responsive.dart';
 
 import '../../providers/adoption/adoption_streams.dart';
 import '../../providers/adoption/adoption_controller.dart';
@@ -12,11 +13,7 @@ class IncomingRequestsPage extends ConsumerStatefulWidget {
   final String? petId;
   final String? petName;
 
-  const IncomingRequestsPage({
-    super.key,
-    this.petId,
-    this.petName,
-  });
+  const IncomingRequestsPage({super.key, this.petId, this.petName});
 
   @override
   ConsumerState<IncomingRequestsPage> createState() =>
@@ -24,8 +21,9 @@ class IncomingRequestsPage extends ConsumerStatefulWidget {
 }
 
 class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
-    // Uses TabController (needs vsync), so we mix in SingleTickerProviderStateMixin
-    with SingleTickerProviderStateMixin {
+        // Uses TabController (needs vsync), so we mix in SingleTickerProviderStateMixin
+        with
+        SingleTickerProviderStateMixin {
   String? _selectedPetId;
   String? _selectedPetName;
 
@@ -35,8 +33,9 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
   void initState() {
     super.initState();
     _selectedPetId = widget.petId;
-    _selectedPetName =
-        (widget.petName?.trim().isNotEmpty == true) ? widget.petName!.trim() : null;
+    _selectedPetName = (widget.petName?.trim().isNotEmpty == true)
+        ? widget.petName!.trim()
+        : null;
 
     _tab = TabController(length: 2, vsync: this);
 
@@ -107,20 +106,23 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
 
   String? _pickPetNameFromPetsDoc(Map<String, dynamic>? data) {
     if (data == null) return null;
-    final v = (data['name'] ?? data['petName'] ?? data['title'] ?? '').toString().trim();
+    final v = (data['name'] ?? data['petName'] ?? data['title'] ?? '')
+        .toString()
+        .trim();
     return v.isEmpty ? null : v;
   }
 
   String? _pickPetPhotoFromPetsDoc(Map<String, dynamic>? data) {
     if (data == null) return null;
-    final v = (data['photoUrl'] ??
-            data['petPhotoUrl'] ??
-            data['imageUrl'] ??
-            data['photo'] ??
-            data['image'] ??
-            '')
-        .toString()
-        .trim();
+    final v =
+        (data['photoUrl'] ??
+                data['petPhotoUrl'] ??
+                data['imageUrl'] ??
+                data['photo'] ??
+                data['image'] ??
+                '')
+            .toString()
+            .trim();
     return v.isEmpty ? null : v;
   }
 
@@ -134,7 +136,10 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
     }
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('pets').doc(g.petId).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('pets')
+          .doc(g.petId)
+          .snapshots(),
       builder: (context, snap) {
         final name = _pickPetNameFromPetsDoc(snap.data?.data());
         return Text(
@@ -152,7 +157,10 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
     }
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('pets').doc(g.petId).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('pets')
+          .doc(g.petId)
+          .snapshots(),
       builder: (context, snap) {
         final url = _pickPetPhotoFromPetsDoc(snap.data?.data());
         return _SmallPetThumb(url: url);
@@ -163,14 +171,18 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
   Future<void> _selectPetAndGoToAll(_PetGroup g) async {
     setState(() {
       _selectedPetId = g.petId;
-      _selectedPetName = (g.petName?.trim().isNotEmpty == true) ? g.petName!.trim() : null;
+      _selectedPetName = (g.petName?.trim().isNotEmpty == true)
+          ? g.petName!.trim()
+          : null;
     });
 
     _tab.animateTo(1);
 
     if (_selectedPetName == null || _selectedPetName!.isEmpty) {
-      final doc =
-          await FirebaseFirestore.instance.collection('pets').doc(g.petId).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('pets')
+          .doc(g.petId)
+          .get();
       final name = _pickPetNameFromPetsDoc(doc.data());
       if (!mounted) return;
       if (name != null && name.isNotEmpty) {
@@ -184,23 +196,21 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
     final authAsync = ref.watch(authUserProvider);
 
     return authAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        body: Center(child: Text('Auth error: $e')),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text('Auth error: $e'))),
       data: (user) {
         if (user == null) {
           return const Scaffold(body: Center(child: Text('Please login')));
         }
 
-        final async =
-            ref.watch(incomingAdoptionRequestsStreamProvider(user.uid));
+        final async = ref.watch(
+          incomingAdoptionRequestsStreamProvider(user.uid),
+        );
         final ctrlState = ref.watch(adoptionControllerProvider);
         final controller = ref.read(adoptionControllerProvider.notifier);
 
-final title = 'Incoming Requests';
+        final title = 'Incoming Requests';
 
         // final title = _selectedPetId == null
         //     ? 'Incoming Requests'
@@ -243,12 +253,16 @@ final title = 'Incoming Requests';
 
                 // cache name/photo if present in request
                 final reqName = r.petName?.trim();
-                if (g.petName == null && reqName != null && reqName.isNotEmpty) {
+                if (g.petName == null &&
+                    reqName != null &&
+                    reqName.isNotEmpty) {
                   g.petName = reqName;
                 }
 
                 final reqPhoto = r.petPhotoUrl?.trim();
-                if (g.photoUrl == null && reqPhoto != null && reqPhoto.isNotEmpty) {
+                if (g.photoUrl == null &&
+                    reqPhoto != null &&
+                    reqPhoto.isNotEmpty) {
                   g.photoUrl = reqPhoto;
                 }
 
@@ -270,13 +284,15 @@ final title = 'Incoming Requests';
                 children: [
                   // -------- Tab 1: By Pet --------
                   ListView(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(R.s(context, 12)),
+
                     children: [
-                      const SizedBox(height: 6),
-                      const Text(
+                      SizedBox(height: R.s(context, 6)),
+
+                      Text(
                         'Requests per Pet',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: R.s(context, 16),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -284,37 +300,49 @@ final title = 'Incoming Requests';
                       if (petGroups.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 22),
-                          child:
-                              Center(child: Text('No incoming requests yet.')),
+                          child: Center(
+                            child: Text('No incoming requests yet.'),
+                          ),
                         )
                       else
                         ...petGroups.map((g) {
                           return Card(
                             elevation: 0.6,
-                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            margin: EdgeInsets.symmetric(
+                              vertical: R.s(context, 6),
+                            ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(
+                                R.s(context, 16),
+                              ),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(12),
+                              padding: EdgeInsets.all(R.s(context, 12)),
                               child: Row(
                                 children: [
                                   _petGroupThumb(g),
-                                  const SizedBox(width: 10),
+                                  SizedBox(width: R.s(context, 10)),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        _petGroupTitle(g),
-                                        const SizedBox(height: 6),
+                                        DefaultTextStyle.merge(
+                                          style: TextStyle(
+                                            fontSize: R.s(context, 15),
+                                          ),
+                                          child: _petGroupTitle(g),
+                                        ),
+                                        SizedBox(height: R.s(context, 6)),
                                         Text(
                                           'Requests: ${g.total}  •  Pending: ${g.pending}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  SizedBox(width: R.s(context, 10)),
                                   OutlinedButton(
                                     onPressed: () => _selectPetAndGoToAll(g),
                                     child: const Text('View Requests'),
@@ -346,6 +374,8 @@ final title = 'Incoming Requests';
                               Expanded(
                                 child: Text(
                                   'Filtered by: ${_selectedPetName ?? 'Pet'}',
+                                      maxLines: 1,
+    overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -378,16 +408,18 @@ final title = 'Incoming Requests';
                           // Note: AdoptionRequestCard already fetches name fallback (you fixed it)
                           final petTitle =
                               (r.petName?.trim().isNotEmpty == true)
-                                  ? r.petName!.trim()
-                                  : 'Pet';
+                              ? r.petName!.trim()
+                              : 'Pet';
 
                           return AdoptionRequestCard(
                             r: r,
                             onAccept: (!canDecide || ctrlState.isLoading)
                                 ? null
                                 : () async {
-                                    final okConfirm =
-                                        await _confirmAccept(context, petTitle);
+                                    final okConfirm = await _confirmAccept(
+                                      context,
+                                      petTitle,
+                                    );
                                     if (!okConfirm) return;
 
                                     final ok = await controller.updateStatus(
@@ -404,9 +436,11 @@ final title = 'Incoming Requests';
                                           ok
                                               ? 'Request accepted ✅'
                                               : (ref
-                                                      .read(adoptionControllerProvider)
-                                                      .error ??
-                                                  'Failed to accept'),
+                                                        .read(
+                                                          adoptionControllerProvider,
+                                                        )
+                                                        .error ??
+                                                    'Failed to accept'),
                                         ),
                                       ),
                                     );
@@ -414,8 +448,10 @@ final title = 'Incoming Requests';
                             onReject: (!canDecide || ctrlState.isLoading)
                                 ? null
                                 : () async {
-                                    final okConfirm =
-                                        await _confirmReject(context, petTitle);
+                                    final okConfirm = await _confirmReject(
+                                      context,
+                                      petTitle,
+                                    );
                                     if (!okConfirm) return;
 
                                     final ok = await controller.updateStatus(
@@ -432,9 +468,11 @@ final title = 'Incoming Requests';
                                           ok
                                               ? 'Request rejected ✅'
                                               : (ref
-                                                      .read(adoptionControllerProvider)
-                                                      .error ??
-                                                  'Failed to reject'),
+                                                        .read(
+                                                          adoptionControllerProvider,
+                                                        )
+                                                        .error ??
+                                                    'Failed to reject'),
                                         ),
                                       ),
                                     );
@@ -460,11 +498,7 @@ class _PetGroup {
   int total = 0;
   int pending = 0;
 
-  _PetGroup({
-    required this.petId,
-    this.petName,
-    this.photoUrl,
-  });
+  _PetGroup({required this.petId, this.petName, this.photoUrl});
 }
 
 /// Small thumb used in By Pet list
@@ -477,14 +511,14 @@ class _SmallPetThumb extends StatelessWidget {
     final hasUrl = url?.trim().isNotEmpty == true;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+  borderRadius: BorderRadius.circular(R.s(context, 14)),
       child: Container(
         width: 44,
         height: 44,
         color: Colors.grey.shade200,
         child: hasUrl
             ? Image.network(url!, fit: BoxFit.cover)
-            : const Icon(Icons.pets, size: 22),
+            : Icon(Icons.pets, size:R.s(context, 22)),
       ),
     );
   }

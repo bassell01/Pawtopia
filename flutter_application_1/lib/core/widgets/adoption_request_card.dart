@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/utils/responsive.dart';
 import '../../../domain/entities/adoption/adoption_request.dart';
 
 class AdoptionRequestCard extends StatelessWidget {
@@ -12,7 +13,6 @@ class AdoptionRequestCard extends StatelessWidget {
   ///Optional fallback text when requesterName is missing
   ///display Unknown
   final String requesterFallback;
-
 
   final VoidCallback? onCancel;
   final VoidCallback? onAccept;
@@ -31,23 +31,24 @@ class AdoptionRequestCard extends StatelessWidget {
   });
 
   /// Title widget that guarantees showing pet name
-  Widget _petTitleWidget() {
+  Widget _petTitleWidget(BuildContext context) {
     final fromRequest = r.petName?.trim();
+    final titleStyle = TextStyle(
+      fontSize: R.s(context, 16),
+      fontWeight: FontWeight.w800,
+    );
+
     if (fromRequest != null && fromRequest.isNotEmpty) {
-      // Use pet name from request if available
       return Text(
         fromRequest,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: titleStyle,
       );
     }
 
-// Fallback: listen to pets collection to resolve pet name if missing in request
-    // Fallback: read from pets/{petId}
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('pets')
-          .doc(r.petId)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('pets').doc(r.petId).snapshots(),
       builder: (context, snap) {
         String title = 'Pet';
 
@@ -59,7 +60,9 @@ class AdoptionRequestCard extends StatelessWidget {
 
         return Text(
           title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: titleStyle,
         );
       },
     );
@@ -78,17 +81,22 @@ class AdoptionRequestCard extends StatelessWidget {
 
     final msg = r.message?.trim();
 
+    final mH = R.s(context, 12);
+    final mV = R.s(context, 8);
+
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: mH, vertical: mV),
       elevation: 0.6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(R.s(context, 16)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(R.s(context, 12)),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _PetThumb(url: r.petPhotoUrl),
-            const SizedBox(width: 12),
+            SizedBox(width: R.s(context, 12)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,30 +104,40 @@ class AdoptionRequestCard extends StatelessWidget {
                   // -------- Title + Status
                   Row(
                     children: [
-                      Expanded(child: _petTitleWidget()),
-                      _StatusChip(status: r.status),
+                      Expanded(child: _petTitleWidget(context)),
+                      SizedBox(width: R.s(context, 8)),
+                      FittedBox(
+                        child: _StatusChip(status: r.status),
+                      ),
                     ],
                   ),
 
                   if (petMeta.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    SizedBox(height: R.s(context, 6)),
                     Text(
                       petMeta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: Colors.grey.shade700),
                     ),
                   ],
 
                   // -------- Requester (only if showRequester = true)
                   if (showRequester) ...[
-                    const SizedBox(height: 10),
+                    SizedBox(height: R.s(context, 10)),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.person_outline, size: R.s(context, 18)),
+                        SizedBox(width: R.s(context, 6)),
                         Expanded(
                           child: Text(
                             'Requester: ${requesterName ?? requesterFallback}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: R.s(context, 14),
+                            ),
                           ),
                         ),
                       ],
@@ -128,31 +146,31 @@ class AdoptionRequestCard extends StatelessWidget {
 
                   // -------- Message
                   if (msg != null && msg.isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    SizedBox(height: R.s(context, 10)),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(R.s(context, 10)),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(R.s(context, 12)),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: Text(
                         '“$msg”',
-                        style: const TextStyle(fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          fontSize: R.s(context, 14),
+                        ),
                       ),
                     ),
                   ],
 
-                  // -------- Actions (ADD open chat support)
-                  if (onCancel != null ||
-                      onAccept != null ||
-                      onReject != null ||
-                      onOpenChat != null) ...[
-                    const SizedBox(height: 12),
+                  // -------- Actions
+                  if (onCancel != null || onAccept != null || onReject != null || onOpenChat != null) ...[
+                    SizedBox(height: R.s(context, 12)),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: R.s(context, 8),
+                      runSpacing: R.s(context, 8),
                       children: [
                         if (onOpenChat != null)
                           OutlinedButton.icon(
@@ -200,15 +218,17 @@ class _PetThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasUrl = url?.trim().isNotEmpty == true;
+    final size = R.s(context, 78);
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(R.s(context, 16)),
       child: Container(
-        width: 78,
-        height: 78,
+        width: size,
+        height: size,
         color: Colors.grey.shade200,
         child: hasUrl
             ? Image.network(url!, fit: BoxFit.cover)
-            : const Icon(Icons.pets, size: 34),
+            : Icon(Icons.pets, size: R.s(context, 34)),
       ),
     );
   }
@@ -221,7 +241,10 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: R.s(context, 10),
+        vertical: R.s(context, 6),
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         color: Colors.grey.shade100,
@@ -229,7 +252,10 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         status.name,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          fontSize: R.s(context, 12),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
