@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -168,7 +170,7 @@ class PetDetailPage extends ConsumerWidget {
 
           return ownerProfileAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (owner) {
               final ownerName = owner.displayName ?? owner.fullName ?? 'Owner';
 
@@ -309,7 +311,7 @@ class _FullHeightPhotoSliderState extends State<_FullHeightPhotoSlider> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) => _placeholder(context),
+        errorBuilder: (_, _, _) => _placeholder(context),
         loadingBuilder: (context, child, progress) {
           if (progress == null) return child;
           return Center(
@@ -331,7 +333,7 @@ class _FullHeightPhotoSliderState extends State<_FullHeightPhotoSlider> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) => _placeholder(context),
+        errorBuilder: (_, _, _) => _placeholder(context),
       );
     } else {
       // gs:// or anything else not supported directly

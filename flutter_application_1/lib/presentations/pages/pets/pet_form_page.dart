@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../domain/entities/pets/pet.dart';
 import '../../providers/pets/pet_providers.dart';
@@ -126,7 +125,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
         url,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, __, ___) => _placeholder(context),
+        errorBuilder: (_, _, _) => _placeholder(context),
       );
     }
 
@@ -139,7 +138,7 @@ class _PetFormPageState extends ConsumerState<PetFormPage> {
         file,
         fit: BoxFit.cover,
         width: double.infinity,
-        errorBuilder: (_, __, ___) => _placeholder(context),
+        errorBuilder: (_, _, _) => _placeholder(context),
       );
     }
 
