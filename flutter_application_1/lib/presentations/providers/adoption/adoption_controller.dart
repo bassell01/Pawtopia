@@ -49,7 +49,7 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
         createdAt: null,
         updatedAt: null,
 
-        // ✅ IMPORTANT: do NOT create thread at request time
+        //IMPORTANT: do NOT create thread at request time
         threadId: null,
 
         petName: petName,
@@ -80,7 +80,7 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
     }
   }
 
-  Future<bool> updateStatus({
+Future<bool> updateStatus({
     required String requestId,
     required AdoptionStatus status,
     String? threadId,
@@ -88,58 +88,17 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
     state = const AdoptionControllerState(isLoading: true, error: null);
 
     try {
-      String? ensuredThreadId = threadId;
-
-      //Feature 1: Create chat ONLY when owner ACCEPTS (and threadId is missing)
-      if (status == AdoptionStatus.accepted &&
-          (ensuredThreadId == null || ensuredThreadId.trim().isEmpty)) {
-        final reqSnap = await FirebaseFirestore.instance
-            .collection('adoption_requests') // ✅ change if different
-            .doc(requestId)
-            .get();
-
-        final data = reqSnap.data();
-        if (data == null) {
-          state = const AdoptionControllerState(
-            isLoading: false,
-            error: 'Request not found',
-          );
-          return false;
-        }
-
-        final ownerId = (data['ownerId'] ?? '').toString().trim();
-        final requesterId = (data['requesterId'] ?? '').toString().trim();
-
-        if (ownerId.isEmpty || requesterId.isEmpty) {
-          state = const AdoptionControllerState(
-            isLoading: false,
-            error: 'Invalid request data',
-          );
-          return false;
-        }
-
-        final createThread = ref.read(createThreadIfNeededProvider);
-        ensuredThreadId = await createThread.call([
-          ownerId,
-          requesterId,
-        ], petId: null);
-      }
-
       final usecase = ref.read(updateAdoptionStatusProvider);
 
       final res = await usecase(
         requestId: requestId,
         status: status,
-        threadId: ensuredThreadId,
+        threadId: threadId,
       );
 
-      // keep your structure: fold returns bool
-      final ok = res.fold(
+      return res.fold(
         (fail) {
-          state = AdoptionControllerState(
-            isLoading: false,
-            error: fail.message,
-          );
+          state = AdoptionControllerState(isLoading: false, error: fail.message);
           return false;
         },
         (_) {
@@ -147,70 +106,6 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
           return true;
         },
       );
-
-      // Feature 2: Send the exact automatic message AFTER accept success
-      if (ok &&
-          status == AdoptionStatus.accepted &&
-          ensuredThreadId != null &&
-          ensuredThreadId.trim().isNotEmpty) {
-        // read request to build message
-        final reqSnap = await FirebaseFirestore.instance
-            .collection('adoption_requests')
-            .doc(requestId)
-            .get();
-
-        final data = reqSnap.data();
-
-        final ownerId = (data?['ownerId'] ?? '').toString().trim();
-        final requesterName = (data?['requesterName'] ?? '').toString().trim();
- 
-        // optional: owner display name
-        String ownerName = '';
-        if (ownerId.isNotEmpty) {
-          final ownerProfile = await FirebaseFirestore.instance
-              .collection('profiles')
-              .doc(ownerId)
-              .get();
-          ownerName = (ownerProfile.data()?['displayName'] ?? '')
-              .toString()
-              .trim();
-        }
-
-        final finalRequesterName = requesterName.isNotEmpty
-            ? requesterName
-            : 'there';
-        final finalOwnerName = ownerName.isNotEmpty ? ownerName : 'Owner';
-
-        // prevent duplicate welcome message (send only if thread has no lastMessage)
-        final threadSnap = await FirebaseFirestore.instance
-            .collection('chat_threads')
-            .doc(ensuredThreadId)
-            .get();
-
-        final lastMsg = (threadSnap.data()?['lastMessage']);
-        final shouldSendWelcome =
-            lastMsg == null || lastMsg.toString().trim().isEmpty;
-
-        final petName = (data?['petName'] ?? 'pet').toString().trim();
-        final finalPetName = petName.isNotEmpty ? petName : 'pet';
-
-
-        if (shouldSendWelcome && ownerId.isNotEmpty) {
-          final text =
-              'Hi, $finalRequesterName 👋\n'
-              '$finalOwnerName With You\n'
-              'Do you Want more details about the $finalPetName  you requested';
-
-          final send = ref.read(sendMessageProvider);
-          await send.call(
-            threadId: ensuredThreadId,
-            senderId: ownerId,
-            text: text,
-          );
-        }
-      }
-
-      return ok;
     } catch (e) {
       state = AdoptionControllerState(isLoading: false, error: e.toString());
       return false;
@@ -220,5 +115,5 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
 
 final adoptionControllerProvider =
     StateNotifierProvider<AdoptionController, AdoptionControllerState>(
-      (ref) => AdoptionController(ref),
-    );
+  (ref) => AdoptionController(ref),
+);

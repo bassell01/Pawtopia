@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/error/exceptions.dart';
 import '../../models/adoption/adoption_request_model.dart';
 
-
 abstract class AdoptionRemoteDataSource {
   Future<String> createRequest(AdoptionRequestModel request);
 
@@ -31,12 +30,12 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _col =>
       firestore.collection('adoption_requests');
 
-// TTL: request expires after 7 days (user can re-request after expiry)
+  // TTL: request expires after 7 days (user can re-request after expiry)
   static const int _ttlDays = 7;
 
   Timestamp _nowTs() => Timestamp.fromDate(DateTime.now());
 
-// Create request document and return its generated ID
+  // Create request document and return its generated ID
   @override
   Future<String> createRequest(AdoptionRequestModel request) async {
     try {
@@ -102,7 +101,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
         return doc.id;
       }
 
-// No duplicate found -> create a new request document
+      // No duplicate found -> create a new request document
       //Create NEW doc each time (so after 7 days, user can request again)
       final doc = _col.doc();
 
@@ -169,9 +168,8 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
             .toList());
   }
 
-///-----------------UPDATE STATE-------------
-// Update adoption request status; on accept also create chat thread + welcome message + mark pet adopted
-
+  ///-----------------UPDATE STATE-------------
+  // Update adoption request status; on accept also create chat thread + welcome message + mark pet adopted
   @override
   Future<void> updateStatus({
     required String requestId,
@@ -186,6 +184,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
       String ownerId = '';
       String requesterId = '';
       String requesterName = '';
+      String petName = '';
 
       await firestore.runTransaction((tx) async {
         // ================= READS FIRST =================
@@ -197,6 +196,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
         ownerId = (data['ownerId'] ?? '') as String;
         requesterId = (data['requesterId'] ?? '') as String;
         requesterName = ((data['requesterName'] ?? '') as String).trim();
+        petName = ((data['petName'] ?? '') as String).trim();
 
         final oldStatus = (data['status'] ?? '') as String;
 
@@ -205,16 +205,19 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
           return;
         }
 
-        //SAME threadId strategy as your existing ChatRemoteDataSource
+        // ✅ FIX CONFLICT/REQUIREMENT:
+        // ONE thread per pair (owner + requester), even if different pets.
         final ids = [ownerId, requesterId]..sort();
-        final resolvedThreadId =
-            '${ids.join("_")}_${petId.isNotEmpty ? petId : "noPet"}';
+        final resolvedThreadId = '${ids.join("_")}_noPet';
 
         //Using EXISTING chat system collections
         final chatThreadRef =
             firestore.collection('chat_threads').doc(resolvedThreadId);
+
+        // ✅ FIX REQUIREMENT:
+        // welcome message per accepted request (so each accepted pet sends a message)
         final welcomeMsgRef =
-            chatThreadRef.collection('messages').doc('welcome'); // deterministic
+            chatThreadRef.collection('messages').doc('welcome_$requestId');
 
         DocumentSnapshot<Map<String, dynamic>>? threadSnap;
         DocumentSnapshot<Map<String, dynamic>>? welcomeSnap;
@@ -227,8 +230,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
           welcomeSnap = await tx.get(welcomeMsgRef);
 
           // READ owner profile FIRST
-          final ownerProfileRef =
-              firestore.collection('profiles').doc(ownerId);
+          final ownerProfileRef = firestore.collection('profiles').doc(ownerId);
           final ownerProfileSnap = await tx.get(ownerProfileRef);
           final ownerData = ownerProfileSnap.data();
           ownerName = ((ownerData?['displayName'] ?? '') as String).trim();
@@ -255,7 +257,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
           if (threadSnap == null || !threadSnap.exists) {
             tx.set(chatThreadRef, {
               'participantIds': [ownerId, requesterId],
-              'petId': petId,
+              'petId': null, // per pair thread
               'requestId': requestId,
               'lastMessage': null,
               'lastMessageAt': FieldValue.serverTimestamp(),
@@ -263,15 +265,16 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
             });
           }
 
-          // welcome message only once
+          // welcome message per request (only once for this requestId)
           if (welcomeSnap == null || !welcomeSnap.exists) {
             final hiName = requesterName.isNotEmpty ? requesterName : 'there';
             final oName = ownerName.isNotEmpty ? ownerName : 'Owner';
+            final pName = petName.isNotEmpty ? petName : 'pet';
 
             final text =
-                'Hi, $hiName\n'
+                'Hi, $hiName 👋\n'
                 '$oName With You\n'
-                'Do you Want more details about the pet you requested';
+                'Do you Want more details about the $pName you requested';
 
             tx.set(welcomeMsgRef, {
               'senderId': ownerId,
