@@ -30,8 +30,6 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
     required String requesterId,
     String? message,
     String? threadId,
-
-    // ✅ NEW: pet summary
     required String petName,
     required String petType,
     String? petLocation,
@@ -45,14 +43,12 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
         petId: petId,
         ownerId: ownerId,
         requesterId: requesterId,
-        requesterName: requesterName, // ✅ ADD THIS
+        requesterName: requesterName, 
         message: message,
         status: AdoptionStatus.pending,
         createdAt: null,
         updatedAt: null,
         threadId: threadId,
-
-        // ✅ NEW
         petName: petName,
         petType: petType,
         petLocation: petLocation,

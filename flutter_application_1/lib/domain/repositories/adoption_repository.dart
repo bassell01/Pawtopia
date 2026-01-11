@@ -1,3 +1,4 @@
+// dartz Either: functional way to return (Failure OR Success) without throwing exceptions
 import 'package:dartz/dartz.dart';
 import '../../core/error/failures.dart';
 import '../entities/adoption/adoption_request.dart';

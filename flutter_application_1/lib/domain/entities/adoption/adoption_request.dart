@@ -3,22 +3,18 @@ enum AdoptionStatus { pending, accepted, rejected, cancelled }
 class AdoptionRequest {
   final String id;
   final String petId;
-
   final String? petName;
   final String? petType;
   final String? petLocation;
   final String? petPhotoUrl;
-
   final String ownerId;
   final String requesterId;
-  final String? requesterName; // ✅ NEW
-
+  final String? requesterName;
   final String? message;
   final AdoptionStatus status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? expiresAt;
-
   final String? threadId;
 
 

@@ -30,6 +30,7 @@ class _AdoptionFormPageState extends ConsumerState<AdoptionFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _msgController = TextEditingController();
 
+// Dispose text controller to avoid memory leaks
   @override
   void dispose() {
     _msgController.dispose();
@@ -98,9 +99,8 @@ class _AdoptionFormPageState extends ConsumerState<AdoptionFormPage> {
       ownerId: widget.ownerId,
       requesterId: me.uid,
 
-      // ✅ THIS is what makes Incoming show the real name
+      //THIS is what makes Incoming show the real name
       requesterName: requesterName,
-
       message: message.isEmpty ? null : message,
       petName: widget.petName,
       petType: widget.petType,

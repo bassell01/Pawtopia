@@ -40,22 +40,20 @@ class AdoptionRequestModel extends AdoptionRequest {
     );
   }
 
+
+  // Convert model to Firestore-friendly Map<String, dynamic>
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'id': id,
       'petId': petId,
-
       'ownerId': ownerId,
       'requesterId': requesterId,
 
       if (requesterName != null) 'requesterName': requesterName,
-
       if (message != null) 'message': message,
-
       'status': status.name,
 
       if (threadId != null) 'threadId': threadId,
-
       if (petName != null) 'petName': petName,
       if (petType != null) 'petType': petType,
       if (petLocation != null) 'petLocation': petLocation,
@@ -91,19 +89,15 @@ class AdoptionRequestModel extends AdoptionRequest {
     return AdoptionRequestModel(
       id: id,
       petId: (json['petId'] ?? '') as String,
-
       ownerId: (json['ownerId'] ?? '') as String,
       requesterId: (json['requesterId'] ?? '') as String,
       requesterName: json['requesterName'] as String?,
-
       message: json['message'] as String?,
       status: parseStatus(json['status']),
       createdAt: parseTime(json['createdAt']),
       updatedAt: parseTime(json['updatedAt']),
       expiresAt: parseTime(json['expiresAt']), 
-
       threadId: json['threadId'] as String?,
-
       petName: json['petName'] as String?,
       petType: json['petType'] as String?,
       petLocation: json['petLocation'] as String?,

@@ -5,17 +5,18 @@ import '../../../domain/entities/adoption/adoption_request.dart';
 class AdoptionRequestCard extends StatelessWidget {
   final AdoptionRequest r;
 
-  /// ✅ Control whether to show requester row (Incoming = true, MyRequests = false)
+  ///Control whether to show requester row (Incoming = true, MyRequests = false)
+  ///hena 3ashan lw el requester (me) mytl3lish asmy fy el MyRequests Card
   final bool showRequester;
 
-  /// ✅ Optional fallback text when requesterName is missing
+  ///Optional fallback text when requesterName is missing
+  ///display Unknown
   final String requesterFallback;
+
 
   final VoidCallback? onCancel;
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
-
-  // ✅ ADD: open chat button action
   final VoidCallback? onOpenChat;
 
   const AdoptionRequestCard({
@@ -26,21 +27,21 @@ class AdoptionRequestCard extends StatelessWidget {
     this.onCancel,
     this.onAccept,
     this.onReject,
-
-    // ✅ ADD
     this.onOpenChat,
   });
 
-  /// Title widget that guarantees showing pet name (from request OR pets doc)
+  /// Title widget that guarantees showing pet name
   Widget _petTitleWidget() {
     final fromRequest = r.petName?.trim();
     if (fromRequest != null && fromRequest.isNotEmpty) {
+      // Use pet name from request if available
       return Text(
         fromRequest,
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       );
     }
 
+// Fallback: listen to pets collection to resolve pet name if missing in request
     // Fallback: read from pets/{petId}
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance

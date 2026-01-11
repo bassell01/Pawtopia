@@ -21,6 +21,9 @@ import '../../domain/usecases/adoption/watch_incoming_adoption_requests.dart';
 import '../../domain/usecases/adoption/update_adoption_status.dart';
 import '../../domain/usecases/adoption/watch_my_accepted_adoption_requests.dart';
 
+
+
+// Global service locator instance used across the app 
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -34,11 +37,7 @@ Future<void> initDependencies() async {
   if (!sl.isRegistered<FirebaseStorage>()) {
     sl.registerLazySingleton<FirebaseStorage>(() => FirebaseStorage.instance);
   }
-    if (!sl.isRegistered<WatchMyAcceptedAdoptionRequests>()) {
-    sl.registerLazySingleton<WatchMyAcceptedAdoptionRequests>(
-      () => WatchMyAcceptedAdoptionRequests(sl<AdoptionRepository>()),
-    );
-  }
+    
 
   // ================== Wrapper services ==================
   if (!sl.isRegistered<FirebaseAuthService>()) {
@@ -57,23 +56,29 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ================== Adoption ==================
+  // ================== Adoption ================== //
 
-  // DataSource
+
+// ================== Adoption DataSource ==================//
+// Remote data source talks directly to Firestore (queries/streams/writes)
   if (!sl.isRegistered<AdoptionRemoteDataSource>()) {
     sl.registerLazySingleton<AdoptionRemoteDataSource>(
       () => AdoptionRemoteDataSourceImpl(firestore: sl<FirebaseFirestore>()),
     );
   }
 
-  // Repository
+// ================== Adoption Repository ==================//
+// Repository implementation connects domain to data source and handles mapping/errors
+
   if (!sl.isRegistered<AdoptionRepository>()) {
     sl.registerLazySingleton<AdoptionRepository>(
       () => AdoptionRepositoryImpl(remote: sl<AdoptionRemoteDataSource>()),
     );
   }
 
-  // Usecases
+// ================== Adoption UseCases ==================//
+// Each usecase represents a single business action and depends on AdoptionRepository
+
   if (!sl.isRegistered<CreateAdoptionRequest>()) {
     sl.registerLazySingleton<CreateAdoptionRequest>(
       () => CreateAdoptionRequest(sl<AdoptionRepository>()),
@@ -83,6 +88,12 @@ Future<void> initDependencies() async {
   if (!sl.isRegistered<WatchMyAdoptionRequests>()) {
     sl.registerLazySingleton<WatchMyAdoptionRequests>(
       () => WatchMyAdoptionRequests(sl<AdoptionRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<WatchMyAcceptedAdoptionRequests>()) {
+    sl.registerLazySingleton<WatchMyAcceptedAdoptionRequests>(
+      () => WatchMyAcceptedAdoptionRequests(sl<AdoptionRepository>()),
     );
   }
 
@@ -97,4 +108,5 @@ Future<void> initDependencies() async {
       () => UpdateAdoptionStatus(sl<AdoptionRepository>()),
     );
   }
+
 }

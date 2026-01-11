@@ -9,10 +9,14 @@ import '../models/adoption/adoption_request_model.dart';
 
 
 class AdoptionRepositoryImpl implements AdoptionRepository {
+  // Remote datasource dependency (injected) used to access Firestore
   final AdoptionRemoteDataSource remote;
+
 
   AdoptionRepositoryImpl({required this.remote});
 
+
+// Create a new adoption request:
   @override
   Future<Either<Failure, String>> createRequest(AdoptionRequest request) async {
     try {
@@ -56,7 +60,7 @@ class AdoptionRepositoryImpl implements AdoptionRepository {
       return Left(ServerFailure(e.message));
     }
   }
-  
+  ///////////////////////////////
   @override
   Future<List<AdoptionRequest>> getUserRequests(String adopterId) {
     // TODO: implement getUserRequests

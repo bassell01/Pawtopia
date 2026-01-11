@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../core/error/exceptions.dart';
 import '../../models/adoption/adoption_request_model.dart';
+
 
 abstract class AdoptionRemoteDataSource {
   Future<String> createRequest(AdoptionRequestModel request);
@@ -22,6 +22,7 @@ abstract class AdoptionRemoteDataSource {
   });
 }
 
+// Firestore implementation of AdoptionRemoteDataSource
 class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
   final FirebaseFirestore firestore;
 
@@ -30,10 +31,12 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _col =>
       firestore.collection('adoption_requests');
 
+// TTL: request expires after 7 days (user can re-request after expiry)
   static const int _ttlDays = 7;
 
   Timestamp _nowTs() => Timestamp.fromDate(DateTime.now());
 
+// Create request document and return its generated ID
   @override
   Future<String> createRequest(AdoptionRequestModel request) async {
     try {
@@ -42,7 +45,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
       final expiresAt =
           Timestamp.fromDate(now.add(const Duration(days: _ttlDays)));
 
-      // ✅ Prevent duplicates ONLY if there is a pending request that is NOT expired
+      // Prevent duplicates ONLY if there is a pending request that is NOT expired
       final existing = await _col
           .where('petId', isEqualTo: request.petId)
           .where('requesterId', isEqualTo: request.requesterId)
@@ -51,7 +54,7 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
           .limit(1)
           .get();
 
-      // ✅ If exists: PATCH missing summary fields (requesterName + pet summary)
+      //If exists: PATCH missing summary fields (requesterName + pet summary)
       if (existing.docs.isNotEmpty) {
         final doc = existing.docs.first;
         final data = doc.data(); // Map<String, dynamic>
@@ -99,7 +102,8 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
         return doc.id;
       }
 
-      // ✅ Create NEW doc each time (so after 7 days, user can request again)
+// No duplicate found -> create a new request document
+      //Create NEW doc each time (so after 7 days, user can request again)
       final doc = _col.doc();
 
       final data = request.toJson()
@@ -165,13 +169,17 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
             .toList());
   }
 
+///-----------------UPDATE STATE-------------
+// Update adoption request status; on accept also create chat thread + welcome message + mark pet adopted
+
   @override
   Future<void> updateStatus({
     required String requestId,
     required String status,
-    String? threadId, // kept for compatibility
+    String? threadId,
   }) async {
     try {
+      // Reference to adoption_requests/{requestId}
       final reqRef = _col.doc(requestId);
 
       String petId = '';
@@ -192,17 +200,17 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
 
         final oldStatus = (data['status'] ?? '') as String;
 
-        // ✅ prevent re-accept (stops duplicates)
+        //prevent re-accept (stops duplicates)
         if (status == 'accepted' && oldStatus == 'accepted') {
           return;
         }
 
-        // ✅ SAME threadId strategy as your existing ChatRemoteDataSource
+        //SAME threadId strategy as your existing ChatRemoteDataSource
         final ids = [ownerId, requesterId]..sort();
         final resolvedThreadId =
             '${ids.join("_")}_${petId.isNotEmpty ? petId : "noPet"}';
 
-        // ✅ Use EXISTING chat system collections
+        //Using EXISTING chat system collections
         final chatThreadRef =
             firestore.collection('chat_threads').doc(resolvedThreadId);
         final welcomeMsgRef =

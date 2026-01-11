@@ -8,7 +8,7 @@ import '../../providers/auth/auth_state_provider.dart';
 import '../../providers/adoption/adoption_streams.dart';
 import '../widgets/adoption_request_card.dart';
 
-// ✅ ADD: import the chat thread page
+//import the chat thread page
 class MyAcceptedHistoryPage extends ConsumerWidget {
   const MyAcceptedHistoryPage({super.key});
 
@@ -16,7 +16,7 @@ class MyAcceptedHistoryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(authUserProvider);
 
-    // ✅ FIX: open chat page instead of SnackBar
+    //FIX: open chat page instead of SnackBar
     void _openChat(String threadId) {
       Navigator.push(
         context,
@@ -56,7 +56,6 @@ class MyAcceptedHistoryPage extends ConsumerWidget {
                 itemBuilder: (context, i) {
                   final r = items[i];
 
-                  // ✅ detect threadId
                   final tid = r.threadId?.trim();
                   final canOpenChat = tid != null && tid.isNotEmpty;
 

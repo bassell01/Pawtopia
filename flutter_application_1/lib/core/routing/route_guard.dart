@@ -1,6 +1,8 @@
 import '../constants/app_routes.dart';
 
 class RouteGuard {
+
+  // RouteGuard contains pure navigation protection logic
   const RouteGuard();
 
   /// Returns a path to redirect to, or null to allow navigation.
@@ -11,13 +13,16 @@ class RouteGuard {
     required bool authLoading,
     required bool roleLoading,
   }) {
+
     // While loading (splash/gate time), keep user on gate only
     if (authLoading || (isLoggedIn && roleLoading)) {
       return (location == AppRoutes.authGate) ? null : AppRoutes.authGate;
     }
 
+// Check if user is navigating to login or register pages
     final isAuthRoute =
         location == AppRoutes.login || location == AppRoutes.register;
+
 
     final isGate = location == AppRoutes.authGate;
 
@@ -25,6 +30,7 @@ class RouteGuard {
     final isAdminRoute =
         location == AppRoutes.adminDashboard ||
         location.startsWith('${AppRoutes.adminDashboard}/');
+
 
     // Not logged in -> allow only auth routes (and gate)
     if (!isLoggedIn) {

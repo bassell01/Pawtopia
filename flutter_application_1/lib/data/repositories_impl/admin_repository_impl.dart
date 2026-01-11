@@ -1,27 +1,45 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:dartz/dartz.dart';
+import '../../../core/error/failures.dart';
 import '../../domain/entities/admin/dashboard_stats.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../datasources/admin/admin_remote_data_source.dart';
-import '../models/admin/dashboard_stats_model.dart';
 
 class AdminRepositoryImpl implements AdminRepository {
-  final AdminRemoteDataSource _remote;
-
-  AdminRepositoryImpl(FirebaseFirestore db) : _remote = AdminRemoteDataSource(db);
+  final AdminRemoteDataSource remote;
+  AdminRepositoryImpl(this.remote);
 
   @override
-  Future<DashboardStats> getDashboardStats() async {
-    final c = await _remote.getStatsCounts();
-    return DashboardStatsModel.fromCounts(
-      totalPets: c['pets'] ?? 0,
-      totalUsers: c['users'] ?? 0,
-      pendingRequests: c['pending'] ?? 0,
-    ).toEntity();
+  Future<Either<Failure, DashboardStats>> getDashboardStats() async {
+    try {
+      final stats = await remote.getDashboardStats();
+      return Right(stats);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 
   @override
-  Future<void> updateUserRole({required String uid, required String role}) {
-    return _remote.updateUserRole(uid, role);
+  Future<Either<Failure, Unit>> updateUserRole({
+    required String uid,
+    required String role,
+  }) async {
+    try {
+      await remote.updateUserRole(uid: uid, role: role);
+      return const Right(unit);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+  
+  @override
+  Future<Either<Failure, Unit>> deleteUser({required String uid}) {
+    // TODO: implement deleteUser
+    throw UnimplementedError();
+  }
+  
+  @override
+  Future<Either<Failure, Unit>> updateUserInfo({required String uid, required Map<String, dynamic> data}) {
+    // TODO: implement updateUserInfo
+    throw UnimplementedError();
   }
 }

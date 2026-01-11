@@ -24,6 +24,7 @@ class IncomingRequestsPage extends ConsumerStatefulWidget {
 }
 
 class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
+    // Uses TabController (needs vsync), so we mix in SingleTickerProviderStateMixin
     with SingleTickerProviderStateMixin {
   String? _selectedPetId;
   String? _selectedPetName;
@@ -167,7 +168,6 @@ class _IncomingRequestsPageState extends ConsumerState<IncomingRequestsPage>
 
     _tab.animateTo(1);
 
-    // لو الاسم مش موجود في الجروب، هاته مرة واحدة من pets عشان العنوان يبقى صح
     if (_selectedPetName == null || _selectedPetName!.isEmpty) {
       final doc =
           await FirebaseFirestore.instance.collection('pets').doc(g.petId).get();
