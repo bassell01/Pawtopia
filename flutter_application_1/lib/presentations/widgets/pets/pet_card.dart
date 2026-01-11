@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../favorites/favorite_icon_button.dart';
+import '../../providers/favorites/favorites_provider.dart';
 
 class PetCard extends StatelessWidget {
   const PetCard({
@@ -22,6 +26,54 @@ class PetCard extends StatelessWidget {
   final bool isAdopted;
   final VoidCallback? onTap;
 
+  bool _isHttpUrl(String url) {
+    final t = url.trim().toLowerCase();
+    return t.startsWith('http://') || t.startsWith('https://');
+  }
+
+  bool _isLocalFilePath(String url) {
+    final t = url.trim().toLowerCase();
+    return t.startsWith('/') || t.startsWith('file://') || t.contains(':/');
+  }
+
+  Widget _placeholder(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: const Icon(Icons.pets),
+    );
+  }
+
+  Widget _buildImage(BuildContext context) {
+    final url = imageUrl;
+
+    if (url == null || url.trim().isEmpty) {
+      return _placeholder(context);
+    }
+
+    if (_isHttpUrl(url)) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(context),
+      );
+    }
+
+    if (_isLocalFilePath(url)) {
+      final file = url.trim().toLowerCase().startsWith('file://')
+          ? File.fromUri(Uri.parse(url))
+          : File(url);
+
+      return Image.file(
+        file,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(context),
+      );
+    }
+
+    return _placeholder(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -34,21 +86,11 @@ class PetCard extends StatelessWidget {
           height: 100,
           child: Row(
             children: [
-            
               AspectRatio(
                 aspectRatio: 1,
-                child: imageUrl != null && imageUrl!.isNotEmpty
-                    ? Image.network(
-                        imageUrl!,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Icon(Icons.pets),
-                      ),
+                child: _buildImage(context),
               ),
 
-             
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -106,12 +148,49 @@ class PetCard extends StatelessWidget {
                 ),
               ),
 
-      
+              /// ❤️ Favorites count ABOVE heart icon
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: FavoriteIconButton(
-                  petId: id,
-                  activeColor: Colors.red,
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final countAsync = ref.watch(favoritesCountProvider(id));
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 🔢 COUNT (on top)
+                        countAsync.when(
+                          data: (count) {
+                            // Hide when 0 for clean UI
+                            if (count <= 0) return const SizedBox(height: 14);
+
+                            return Text(
+                              '$count',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            );
+                          },
+                          loading: () => const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          error: (_, __) => const SizedBox(height: 14),
+                        ),
+
+                        // Small spacing between number and heart
+                        const SizedBox(height: 2),
+
+                        // ❤️ HEART BUTTON
+                        FavoriteIconButton(
+                          petId: id,
+                          activeColor: Colors.red,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],

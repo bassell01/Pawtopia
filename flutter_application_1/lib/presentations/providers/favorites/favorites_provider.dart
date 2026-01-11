@@ -8,11 +8,11 @@ import '../../../domain/usecases/favorites/add_to_favorites.dart';
 import '../../../domain/usecases/favorites/get_favorites.dart';
 import '../../../domain/usecases/favorites/remove_from_favorites.dart';
 
-import '../auth/auth_state_provider.dart'; 
+import '../auth/auth_state_provider.dart';
+import '../pets/pet_providers.dart';
 
-import '../pets/pet_providers.dart';  
-
-final favoritesRemoteDataSourceProvider = Provider<FavoritesRemoteDataSource>((ref) {
+final favoritesRemoteDataSourceProvider =
+    Provider<FavoritesRemoteDataSource>((ref) {
   final firestore = ref.watch(firebaseFirestoreServiceProvider);
   return FavoritesRemoteDataSourceImpl(firestore);
 });
@@ -38,17 +38,13 @@ final getFavoritePetsUseCaseProvider = Provider<GetFavoritePets>((ref) {
   return GetFavoritePets(ref.watch(favoritesRepositoryProvider));
 });
 
-
 final favoritePetsProvider = FutureProvider.autoDispose((ref) async {
   final user = await ref.watch(authStateProvider.future);
   if (user == null) return <dynamic>[];
 
   final usecase = ref.watch(getFavoritePetsUseCaseProvider);
   return usecase(user.uid);
-  
 });
-
-
 
 final isFavoriteProvider =
     StreamProvider.family.autoDispose<bool, String>((ref, petId) async* {
@@ -60,7 +56,6 @@ final isFavoriteProvider =
 
   final favs = await ref.watch(favoritePetsProvider.future);
 
-  
   final isFav = favs.any((p) => (p as dynamic).id == petId);
   yield isFav;
 });
@@ -77,21 +72,27 @@ final toggleFavoriteProvider =
     final favs = await ref.read(favoritePetsProvider.future);
     final isFav = favs.any((p) => (p as dynamic).id == petId);
 
-   if (isFav) {
-  await remove(
-    userId: user.uid,
-    petId: petId,
-  );
-} else {
-  await add(
-    userId: user.uid,
-    petId: petId,
-  );
-}
+    if (isFav) {
+      await remove(
+        userId: user.uid,
+        petId: petId,
+      );
+    } else {
+      await add(
+        userId: user.uid,
+        petId: petId,
+      );
+    }
 
-
-   
+    // ✅ Force refresh after toggle so UI updates immediately
     ref.invalidate(favoritePetsProvider);
     ref.invalidate(isFavoriteProvider(petId));
   };
+});
+
+/// ✅ NEW: live favorites count for a pet (how many users favorited it)
+final favoritesCountProvider =
+    StreamProvider.family.autoDispose<int, String>((ref, petId) {
+  final repo = ref.watch(favoritesRepositoryProvider);
+  return repo.watchFavoritesCount(petId);
 });

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 import '../routing/route_guard.dart';
+import '../../presentations/pages/auth/splash_page.dart';
 import '../../presentations/pages/missing_pets_ai/ai_matching_page.dart';
 import '../../presentations/pages/chat/chat_thread_page.dart';
 import '../../presentations/pages/notifications/notifications_center_page.dart';
@@ -55,6 +56,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     },
 
     routes: [
+
+       GoRoute(
+        path: AppRoutes.splash,
+        builder: (_, __) => const SplashPage(),
+      ),
+
       // ------------------ Auth Gate ------------------
       // A decision screen that routes user to login/home depending on auth state
       GoRoute(path: AppRoutes.authGate, builder: (_, __) => const AuthGate()),
