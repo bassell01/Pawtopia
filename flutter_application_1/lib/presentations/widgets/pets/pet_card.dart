@@ -40,6 +40,7 @@ class PetCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
       child: const Icon(Icons.pets),
     );
   }
@@ -78,6 +79,8 @@ class PetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final hasLocation = location != null && location!.trim().isNotEmpty;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -107,25 +110,37 @@ class PetCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
+
                       Text(
                         type,
                         style: theme.textTheme.bodyMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+
                       const Spacer(),
+
+                      // ✅ FIX: constrain location text in a Row
                       Row(
                         children: [
-                          if (location != null && location!.isNotEmpty)
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on, size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  location!,
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                              ],
+                          if (hasLocation) ...[
+                            const Icon(Icons.location_on, size: 14),
+                            const SizedBox(width: 4),
+
+                            // ✅ This prevents overflow
+                            Expanded(
+                              child: Text(
+                                location!.trim(),
+                                style: theme.textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          const Spacer(),
+                          ] else
+                            const Spacer(),
+
+                          const SizedBox(width: 8),
+
                           if (isAdopted)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -180,10 +195,8 @@ class PetCard extends StatelessWidget {
                           error: (_, __) => const SizedBox(height: 14),
                         ),
 
-                        // Small spacing between number and heart
                         const SizedBox(height: 2),
 
-                        // ❤️ HEART BUTTON
                         FavoriteIconButton(
                           petId: id,
                           activeColor: Colors.red,
