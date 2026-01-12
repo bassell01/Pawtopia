@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth/auth_state_provider.dart';
 import 'my_requests_page.dart';
 import 'incoming_requests_page.dart';
-import 'my_accepted_history_page.dart'; // ✅ NEW
+import 'my_accepted_history_page.dart'; 
 
 class AdoptionHubPage extends ConsumerWidget {
   const AdoptionHubPage({super.key});
@@ -26,12 +26,12 @@ class AdoptionHubPage extends ConsumerWidget {
         }
 
         return DefaultTabController(
-          length: 3, // ✅ was 2
+          length: 3, 
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Adoption'),
 
-              // ✅ optional shortcut button (opens history directly)
+              //optional shortcut button (opens history directly)
               actions: [
                 IconButton(
                   tooltip: 'Accepted History',
@@ -50,7 +50,7 @@ class AdoptionHubPage extends ConsumerWidget {
                 tabs: [
                   Tab(text: 'My Requests'),
                   Tab(text: 'Incoming'),
-                  Tab(text: 'Accepted'), // ✅ NEW
+                  Tab(text: 'Accepted'),
                 ],
               ),
             ),
@@ -58,7 +58,7 @@ class AdoptionHubPage extends ConsumerWidget {
               children: [
                 MyRequestsPage(),
                 IncomingRequestsPage(),
-                MyAcceptedHistoryPage(), // ✅ NEW
+                MyAcceptedHistoryPage(), 
               ],
             ),
           ),

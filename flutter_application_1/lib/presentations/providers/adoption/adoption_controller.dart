@@ -48,10 +48,7 @@ class AdoptionController extends StateNotifier<AdoptionControllerState> {
         status: AdoptionStatus.pending,
         createdAt: null,
         updatedAt: null,
-
-        //IMPORTANT: do NOT create thread at request time
         threadId: null,
-
         petName: petName,
         petType: petType,
         petLocation: petLocation,

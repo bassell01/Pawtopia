@@ -14,14 +14,14 @@ class AdminManageAdoptionRequestsPage extends ConsumerStatefulWidget {
 
 class _AdminManageAdoptionRequestsPageState
     extends ConsumerState<AdminManageAdoptionRequestsPage> {
-  // ✅ Tabs you want
+  //Tabs you want
   static const _tabStatuses = ['pending', 'approved', 'cancelled', 'rejected'];
   static const _tabTitles = ['Pending', 'Accepted', 'Cancelled', 'Rejected'];
 
   DateTime? fromDate;
   DateTime? toDate;
 
-  // ✅ cache to avoid refetching per rebuild
+  //cache to avoid refetching per rebuild
   final Map<String, Map<String, dynamic>> _usersCache = {};
   final Map<String, Map<String, dynamic>> _petsCache = {};
 
