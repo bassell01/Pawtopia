@@ -86,7 +86,7 @@ Future<void> updateUserInfo({
     SetOptions(merge: true), //important: merge adds fields without deleting others
   );
 }
-//Delete user doc (Firestore only)
+//Delete user doc
 Future<void> deleteUserDoc(String uid) async {
   await _db.collection('users').doc(uid).delete();
 }

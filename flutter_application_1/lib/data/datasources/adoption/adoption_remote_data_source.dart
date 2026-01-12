@@ -205,7 +205,6 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
           return;
         }
 
-        // ✅ FIX CONFLICT/REQUIREMENT:
         // ONE thread per pair (owner + requester), even if different pets.
         final ids = [ownerId, requesterId]..sort();
         final resolvedThreadId = '${ids.join("_")}_noPet';
@@ -214,7 +213,6 @@ class AdoptionRemoteDataSourceImpl implements AdoptionRemoteDataSource {
         final chatThreadRef =
             firestore.collection('chat_threads').doc(resolvedThreadId);
 
-        // ✅ FIX REQUIREMENT:
         // welcome message per accepted request (so each accepted pet sends a message)
         final welcomeMsgRef =
             chatThreadRef.collection('messages').doc('welcome_$requestId');
