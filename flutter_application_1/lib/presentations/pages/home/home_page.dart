@@ -10,10 +10,8 @@ import '../chat/chat_list_page.dart';
 import '../favorites/favorites_page.dart';
 import '../pets/pet_list_page.dart';
 
-// ✅ REPLACE old profile tab with ProfilePage
 import '../profile/profile_page.dart';
 
-// notifications count still used in AppBar
 import '../../providers/profile/profile_providers.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -41,7 +39,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       const FavoritesPage(),
       const _AdoptionTab(),
       const ChatListPage(),
-      // ✅ Profile tab is now the full ProfilePage content
       const ProfilePage(),
     ];
 

@@ -101,7 +101,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             icon: Icon(_isEditing ? Icons.close : Icons.edit),
             onPressed: _toggleEdit,
           ),
-          IconButton(icon: const Icon(Icons.logout), onPressed: _handleSignOut),
+          // IconButton(icon: const Icon(Icons.logout), onPressed: _handleSignOut),
         ],
       ),
       body: _isEditing
@@ -209,6 +209,23 @@ class ProfileViewMode extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          // Profile details
+          _buildInfoCard(context, [
+            _buildInfoRow(Icons.email, 'Email', profile.email),
+            if (profile.phoneNumber != null &&
+                (profile.phoneNumber as String).isNotEmpty)
+              _buildInfoRow(Icons.phone, 'Phone', profile.phoneNumber!),
+            if (profile.bio != null && (profile.bio as String).isNotEmpty)
+              _buildInfoRow(Icons.info, 'Bio', profile.bio!),
+            if (profile.address != null &&
+                (profile.address as String).isNotEmpty)
+              _buildInfoRow(
+                Icons.location_on,
+                'Address',
+                '${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode}',
+              ),
+          ]),
+
           // ✅ Theme toggle
           SizedBox(
             width: double.infinity,
@@ -254,23 +271,6 @@ class ProfileViewMode extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
-
-          // Profile details
-          _buildInfoCard(context, [
-            _buildInfoRow(Icons.email, 'Email', profile.email),
-            if (profile.phoneNumber != null &&
-                (profile.phoneNumber as String).isNotEmpty)
-              _buildInfoRow(Icons.phone, 'Phone', profile.phoneNumber!),
-            if (profile.bio != null && (profile.bio as String).isNotEmpty)
-              _buildInfoRow(Icons.info, 'Bio', profile.bio!),
-            if (profile.address != null &&
-                (profile.address as String).isNotEmpty)
-              _buildInfoRow(
-                Icons.location_on,
-                'Address',
-                '${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode}',
-              ),
-          ]),
         ],
       ),
     );
