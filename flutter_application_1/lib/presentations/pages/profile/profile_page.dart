@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/services/image_picker_service.dart';
 import '../../providers/auth/auth_providers.dart';
 import '../../providers/profile/profile_providers.dart';
+
+// ✅ Theme toggle provider
+import '../../providers/theme/theme_mode_provider.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -17,6 +21,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   void initState() {
     super.initState();
+
+    // Load profile once after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = ref.read(currentUserIdProvider);
       if (userId != null) {
@@ -46,9 +52,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     if (confirm == true) {
       await ref.read(authControllerProvider.notifier).signOut();
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+
+      if (!mounted) return;
+
+      // Keep your existing navigation style (Named route)
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
@@ -58,17 +66,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     final imagePath = await ImagePickerService.pickImage();
     if (imagePath != null) {
-      await ref.read(profileControllerProvider.notifier).uploadProfileImage(
-            userId: userId,
-            imagePath: imagePath,
-          );
+      await ref
+          .read(profileControllerProvider.notifier)
+          .uploadProfileImage(userId: userId, imagePath: imagePath);
     }
   }
 
   void _toggleEdit() {
-    setState(() {
-      _isEditing = !_isEditing;
-    });
+    setState(() => _isEditing = !_isEditing);
   }
 
   @override
@@ -77,16 +82,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final profileState = ref.watch(profileControllerProvider);
     final profile = profileState.profile;
 
+    // ✅ Theme mode
+    final themeMode = ref.watch(themeModeProvider);
+
     if (profileState.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (profile == null) {
-      return const Scaffold(
-        body: Center(child: Text('Profile not found')),
-      );
+      return const Scaffold(body: Center(child: Text('Profile not found')));
     }
 
     return Scaffold(
@@ -97,10 +101,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             icon: Icon(_isEditing ? Icons.close : Icons.edit),
             onPressed: _toggleEdit,
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _handleSignOut,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _handleSignOut),
         ],
       ),
       body: _isEditing
@@ -109,25 +110,54 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               profile: profile,
               user: user,
               onImageUpload: _handleImageUpload,
+              themeMode: themeMode,
+              onToggleTheme: () {
+                ref
+                    .read(themeModeProvider.notifier)
+                    .state = (themeMode == ThemeMode.dark)
+                    ? ThemeMode.light
+                    : ThemeMode.dark;
+              },
+              onSignOut: _handleSignOut,
             ),
     );
   }
 }
 
 class ProfileViewMode extends StatelessWidget {
-  final profile;
-  final user;
+  final dynamic profile;
+  final dynamic user;
   final VoidCallback onImageUpload;
+
+  final ThemeMode themeMode;
+  final VoidCallback onToggleTheme;
+  final VoidCallback onSignOut;
 
   const ProfileViewMode({
     super.key,
     required this.profile,
     required this.user,
     required this.onImageUpload,
+    required this.themeMode,
+    required this.onToggleTheme,
+    required this.onSignOut,
   });
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+
+    // ✅ FIX: UserRole may not have `.name`
+    final role = user?.role;
+    final String roleText = (role == null)
+        ? 'USER'
+        : (() {
+            final raw = role.toString(); // e.g. "UserRole.admin"
+            return raw.contains('.')
+                ? raw.split('.').last.toUpperCase()
+                : raw.toUpperCase();
+          })();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -137,10 +167,14 @@ class ProfileViewMode extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 60,
-                backgroundImage: profile.photoUrl != null
+                backgroundImage:
+                    (profile.photoUrl != null &&
+                        (profile.photoUrl as String).isNotEmpty)
                     ? NetworkImage(profile.photoUrl!)
                     : null,
-                child: profile.photoUrl == null
+                child:
+                    (profile.photoUrl == null ||
+                        (profile.photoUrl as String).isEmpty)
                     ? const Icon(Icons.person, size: 60)
                     : null,
               ),
@@ -151,7 +185,7 @@ class ProfileViewMode extends StatelessWidget {
                   icon: const Icon(Icons.camera_alt),
                   onPressed: onImageUpload,
                   style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
+                    backgroundColor: primary,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -169,25 +203,74 @@ class ProfileViewMode extends StatelessWidget {
 
           // Role badge
           Chip(
-            label: Text(user?.role.name.toUpperCase() ?? 'USER'),
-            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+            label: Text(roleText),
+            backgroundColor: primary.withOpacity(0.2),
           ),
+
+          const SizedBox(height: 16),
+
+          // ✅ Theme toggle
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 20,
+                ),
+              ),
+              onPressed: onToggleTheme,
+              icon: Icon(
+                themeMode == ThemeMode.dark
+                    ? Icons.dark_mode
+                    : Icons.light_mode,
+              ),
+              label: Text(
+                themeMode == ThemeMode.dark
+                    ? 'Dark Mode: ON'
+                    : 'Dark Mode: OFF',
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Sign out
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 20,
+                ),
+              ),
+              onPressed: onSignOut,
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign Out'),
+            ),
+          ),
+
           const SizedBox(height: 24),
 
           // Profile details
-          _buildInfoCard(
-            context,
-            [
-              _buildInfoRow(Icons.email, 'Email', profile.email),
-              if (profile.phoneNumber != null)
-                _buildInfoRow(Icons.phone, 'Phone', profile.phoneNumber!),
-              if (profile.bio != null)
-                _buildInfoRow(Icons.info, 'Bio', profile.bio!),
-              if (profile.address != null)
-                _buildInfoRow(Icons.location_on, 'Address',
-                    '${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode}'),
-            ],
-          ),
+          _buildInfoCard(context, [
+            _buildInfoRow(Icons.email, 'Email', profile.email),
+            if (profile.phoneNumber != null &&
+                (profile.phoneNumber as String).isNotEmpty)
+              _buildInfoRow(Icons.phone, 'Phone', profile.phoneNumber!),
+            if (profile.bio != null && (profile.bio as String).isNotEmpty)
+              _buildInfoRow(Icons.info, 'Bio', profile.bio!),
+            if (profile.address != null &&
+                (profile.address as String).isNotEmpty)
+              _buildInfoRow(
+                Icons.location_on,
+                'Address',
+                '${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode}',
+              ),
+          ]),
         ],
       ),
     );
@@ -219,10 +302,7 @@ class ProfileViewMode extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 Text(value),
               ],
@@ -235,7 +315,7 @@ class ProfileViewMode extends StatelessWidget {
 }
 
 class ProfileEditView extends ConsumerStatefulWidget {
-  final profile;
+  final dynamic profile;
 
   const ProfileEditView({super.key, required this.profile});
 
@@ -256,8 +336,9 @@ class _ProfileEditViewState extends ConsumerState<ProfileEditView> {
   @override
   void initState() {
     super.initState();
-    _displayNameController =
-        TextEditingController(text: widget.profile.displayName);
+    _displayNameController = TextEditingController(
+      text: widget.profile.displayName,
+    );
     _phoneController = TextEditingController(text: widget.profile.phoneNumber);
     _bioController = TextEditingController(text: widget.profile.bio);
     _addressController = TextEditingController(text: widget.profile.address);
@@ -284,7 +365,9 @@ class _ProfileEditViewState extends ConsumerState<ProfileEditView> {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
 
-    final success = await ref.read(profileControllerProvider.notifier).updateProfile(
+    final success = await ref
+        .read(profileControllerProvider.notifier)
+        .updateProfile(
           userId: userId,
           displayName: _displayNameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
